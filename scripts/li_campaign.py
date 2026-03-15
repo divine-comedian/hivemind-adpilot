@@ -4,8 +4,9 @@ CLI usage:
     python -m scripts.li_campaign create-campaign --name "Test" --objective WEBSITE_VISITS --daily-budget 50
     python -m scripts.li_campaign update-campaign --campaign-id 123 --status PAUSED
     python -m scripts.li_campaign upload-image --image-path path/to/image.png
-    python -m scripts.li_campaign create-creative --campaign-id 123 --image-urn "urn:li:image:xxx" \\
-        --headline "Title" --intro-text "Body" --cta LEARN_MORE --url https://aurevon.com
+    python -m scripts.li_campaign create-ad --campaign-id 555838216 --image-path drafts/image.png \\
+        --headline "Title" --intro-text "Body" --cta LEARN_MORE --url https://aurevon.ca
+    python -m scripts.li_campaign list-creatives --campaign-id 555838216
 """
 
 import argparse
@@ -25,12 +26,26 @@ VALID_CTAS = [
     "LEARN_MORE", "SIGN_UP", "REGISTER", "DOWNLOAD", "APPLY", "GET_QUOTE", "SUBSCRIBE",
 ]
 
+# Organization URN for Aurevon Intelligence (image uploads must be owned by org)
+_ORG_URN = "urn:li:organization:112708829"
+
+# Creatives endpoint requires a different API version than other endpoints
+_CREATIVES_VERSION = "202509"
+
+
+def _headers(version: str | None = None) -> dict:
+    """Return LinkedIn headers, optionally overriding the API version."""
+    h = linkedin_headers()
+    if version:
+        h["LinkedIn-Version"] = version
+    return h
+
 
 def _handle_error(resp: requests.Response, context: str) -> None:
     """Print error and exit on non-success response."""
     if resp.status_code in (401, 403):
         print(
-            f"Error: LinkedIn token invalid (HTTP {resp.status_code}). "
+            f"Error: LinkedIn token invalid or forbidden (HTTP {resp.status_code}). "
             f"Regenerate your access token and update .env",
             file=sys.stderr,
         )
@@ -43,6 +58,8 @@ def _handle_error(resp: requests.Response, context: str) -> None:
     print(f"Error ({context}): HTTP {resp.status_code}: {detail}", file=sys.stderr)
     sys.exit(1)
 
+
+# --- Campaign management ---
 
 def create_campaign(
     account_id: str,
@@ -68,7 +85,7 @@ def create_campaign(
             "currencyCode": "CAD",
         },
     }
-    resp = requests.post(url, headers={**linkedin_headers(), "Content-Type": "application/json"}, json=body)
+    resp = requests.post(url, headers={**_headers(), "Content-Type": "application/json"}, json=body)
 
     if resp.status_code not in (200, 201):
         _handle_error(resp, "create campaign")
@@ -85,7 +102,7 @@ def update_campaign(
     """Update a LinkedIn campaign via PARTIAL_UPDATE."""
     url = f"{LINKEDIN_BASE_URL}/adAccounts/{account_id}/adCampaigns/{campaign_id}"
     headers = {
-        **linkedin_headers(),
+        **_headers(),
         "Content-Type": "application/json",
         "X-RestLi-Method": "PARTIAL_UPDATE",
     }
@@ -98,32 +115,31 @@ def update_campaign(
     return {"success": True, "campaign_id": campaign_id, "updates": updates}
 
 
-def initialize_image_upload(account_id: str) -> dict:
-    """Initialize a LinkedIn image upload. Returns upload_url and image_urn."""
+# --- Image upload ---
+
+def upload_image(account_id: str, image_path: str) -> dict:
+    """Upload image to LinkedIn CDN. Owner is the organization (required for ad posts).
+
+    Returns dict with image_urn.
+    """
+    # Step 1: Initialize upload with org as owner
     url = f"{LINKEDIN_BASE_URL}/images?action=initializeUpload"
     body = {
         "initializeUploadRequest": {
-            "owner": f"urn:li:sponsoredAccount:{account_id}",
+            "owner": _ORG_URN,
         }
     }
-    resp = requests.post(url, headers={**linkedin_headers(), "Content-Type": "application/json"}, json=body)
+    resp = requests.post(url, headers={**_headers(), "Content-Type": "application/json"}, json=body)
 
     if resp.status_code != 200:
         _handle_error(resp, "initialize image upload")
 
     data = resp.json()["value"]
-    return {
-        "upload_url": data["uploadUrl"],
-        "image_urn": data["image"],
-    }
+    upload_url = data["uploadUrl"]
+    image_urn = data["image"]
 
-
-def upload_image_binary(upload_url: str, image_data: bytes) -> dict:
-    """Upload image binary data to LinkedIn CDN.
-
-    Uses manual auth header (not linkedin_headers()) because the upload URL
-    is a CDN endpoint that doesn't require Rest.li version headers.
-    """
+    # Step 2: Upload binary to CDN (uses manual auth, no Rest.li version headers)
+    image_data = Path(image_path).read_bytes()
     headers = {
         "Authorization": f"Bearer {get_env('LINKEDIN_ACCESS_TOKEN')}",
         "Content-Type": "application/octet-stream",
@@ -133,49 +149,187 @@ def upload_image_binary(upload_url: str, image_data: bytes) -> dict:
     if resp.status_code not in (200, 201):
         _handle_error(resp, "image upload")
 
-    return {"success": True}
+    return {"image_urn": image_urn}
 
 
-def create_creative(
+# --- Ad creation (full 3-step flow) ---
+
+def create_ad(
     account_id: str,
     campaign_id: str,
-    image_urn: str,
+    image_path: str,
     headline: str,
     intro_text: str,
     cta: str,
     destination_url: str,
+    status: str = "ACTIVE",
 ) -> dict:
-    """Create an ad creative with image and copy."""
-    url = f"{LINKEDIN_BASE_URL}/adAccounts/{account_id}/adCreatives"
-    body = {
-        "account": f"urn:li:sponsoredAccount:{account_id}",
-        "campaign": f"urn:li:sponsoredCampaign:{campaign_id}",
+    """Create a LinkedIn image ad in one call (upload → post → creative).
+
+    This is the full 3-step flow:
+    1. Upload image with org as owner
+    2. Create a DSC (Direct Sponsored Content) post via /rest/posts
+    3. Create a creative referencing the post via BATCH_CREATE
+    """
+    # Step 1: Upload image
+    print("Uploading image...", file=sys.stderr)
+    img_result = upload_image(account_id, image_path)
+    image_urn = img_result["image_urn"]
+    print(f"Image uploaded: {image_urn}", file=sys.stderr)
+
+    # Step 2: Create DSC post
+    print("Creating post...", file=sys.stderr)
+    post_url = f"{LINKEDIN_BASE_URL}/posts"
+    post_body = {
+        "adContext": {
+            "dscAdAccount": f"urn:li:sponsoredAccount:{account_id}",
+            "dscStatus": "ACTIVE",
+        },
+        "author": _ORG_URN,
+        "commentary": intro_text,
+        "visibility": "PUBLIC",
+        "distribution": {
+            "feedDistribution": "NONE",
+            "thirdPartyDistributionChannels": [],
+        },
         "content": {
-            "singleImage": {
-                "image": image_urn,
-                "headline": headline,
-                "callToAction": cta,
+            "media": {
+                "title": headline,
+                "id": image_urn,
             }
         },
-        "intendedStatus": "ACTIVE",
-        "commentary": intro_text,
-        "destinationUrl": destination_url,
+        "contentCallToActionLabel": cta,
+        "contentLandingPage": destination_url,
+        "lifecycleState": "PUBLISHED",
+        "isReshareDisabledByAuthor": True,
     }
-    resp = requests.post(url, headers={**linkedin_headers(), "Content-Type": "application/json"}, json=body)
+    resp = requests.post(
+        post_url,
+        headers={**_headers(), "Content-Type": "application/json"},
+        json=post_body,
+    )
+
+    if resp.status_code != 201:
+        _handle_error(resp, "create post")
+
+    share_urn = resp.headers.get("x-restli-id", "")
+    print(f"Post created: {share_urn}", file=sys.stderr)
+
+    # Step 3: Create creative via BATCH_CREATE (requires version 202509)
+    print("Creating creative...", file=sys.stderr)
+    creative_url = f"{LINKEDIN_BASE_URL}/adAccounts/{account_id}/creatives"
+    creative_body = {
+        "elements": [
+            {
+                "content": {"reference": share_urn},
+                "campaign": f"urn:li:sponsoredCampaign:{campaign_id}",
+                "intendedStatus": status,
+            }
+        ]
+    }
+    resp = requests.post(
+        creative_url,
+        headers={
+            **_headers(version=_CREATIVES_VERSION),
+            "Content-Type": "application/json",
+            "X-RestLi-Method": "BATCH_CREATE",
+        },
+        json=creative_body,
+    )
 
     if resp.status_code not in (200, 201):
+        # Report what was created so user can clean up if needed
+        print(f"Warning: Post {share_urn} was created but creative failed.", file=sys.stderr)
         _handle_error(resp, "create creative")
 
-    creative_id = resp.headers.get("x-restli-id", "")
-    return {"creative_id": creative_id, "campaign_id": campaign_id}
+    creative_id = resp.json()["elements"][0].get("id", "")
+    print(f"Creative created: {creative_id}", file=sys.stderr)
+
+    return {
+        "creative_id": creative_id,
+        "share_urn": share_urn,
+        "image_urn": image_urn,
+        "campaign_id": campaign_id,
+        "status": status,
+    }
 
 
-def upload_image(account_id: str, image_path: str) -> dict:
-    """Full image upload flow: initialize + upload binary. Returns image_urn."""
-    init = initialize_image_upload(account_id)
-    image_data = Path(image_path).read_bytes()
-    upload_image_binary(init["upload_url"], image_data)
-    return {"image_urn": init["image_urn"], "upload_url": init["upload_url"]}
+# --- List creatives ---
+
+def list_creatives(account_id: str, campaign_id: str) -> list[dict]:
+    """List creatives for a campaign."""
+    from urllib.parse import quote
+    campaign_urn = quote(f"urn:li:sponsoredCampaign:{campaign_id}", safe="")
+    url = (
+        f"{LINKEDIN_BASE_URL}/adAccounts/{account_id}/creatives"
+        f"?q=criteria&campaigns=List({campaign_urn})"
+    )
+    resp = requests.get(url, headers=_headers(version=_CREATIVES_VERSION))
+
+    if resp.status_code != 200:
+        _handle_error(resp, "list creatives")
+
+    elements = resp.json().get("elements", [])
+    return [
+        {
+            "id": e.get("id"),
+            "name": e.get("name"),
+            "status": e.get("intendedStatus"),
+            "serving": e.get("isServing"),
+            "review": e.get("review", {}).get("status"),
+            "content_ref": e.get("content", {}).get("reference"),
+        }
+        for e in elements
+    ]
+
+
+def update_creative_status(account_id: str, creative_id: str, status: str) -> dict:
+    """Update a creative's intendedStatus (ACTIVE, PAUSED, ARCHIVED)."""
+    from urllib.parse import quote
+    creative_urn = quote(creative_id, safe="")
+    url = f"{LINKEDIN_BASE_URL}/adAccounts/{account_id}/creatives/{creative_urn}"
+    resp = requests.post(
+        url,
+        headers={
+            **_headers(version=_CREATIVES_VERSION),
+            "Content-Type": "application/json",
+            "X-RestLi-Method": "PARTIAL_UPDATE",
+        },
+        json={"patch": {"$set": {"intendedStatus": status}}},
+    )
+
+    if resp.status_code not in (200, 204):
+        _handle_error(resp, f"update creative {creative_id}")
+
+    return {"creative_id": creative_id, "status": status}
+
+
+def rotate_creatives(
+    account_id: str,
+    campaign_id: str,
+    keep_ids: list[str] | None = None,
+    pause_all: bool = False,
+) -> dict:
+    """Pause old creatives in a campaign. Optionally keep specific ones active.
+
+    If pause_all is True, pauses everything (use before adding fresh ads).
+    If keep_ids is provided, only those stay ACTIVE, rest get PAUSED.
+    """
+    creatives = list_creatives(account_id, campaign_id)
+    paused = []
+    kept = []
+
+    for c in creatives:
+        cid = c["id"]
+        if c["status"] != "ACTIVE":
+            continue
+        if pause_all or (keep_ids and cid not in keep_ids):
+            update_creative_status(account_id, cid, "PAUSED")
+            paused.append(cid)
+        else:
+            kept.append(cid)
+
+    return {"paused": paused, "kept_active": kept}
 
 
 def main():
@@ -199,14 +353,33 @@ def main():
     p_img = sub.add_parser("upload-image")
     p_img.add_argument("--image-path", required=True, help="Path to image file")
 
-    # create-creative
-    p_creative = sub.add_parser("create-creative")
-    p_creative.add_argument("--campaign-id", required=True)
-    p_creative.add_argument("--image-urn", required=True)
-    p_creative.add_argument("--headline", required=True)
-    p_creative.add_argument("--intro-text", required=True)
-    p_creative.add_argument("--cta", choices=VALID_CTAS, default="LEARN_MORE")
-    p_creative.add_argument("--url", required=True, help="Destination URL")
+    # create-ad (full 3-step flow)
+    p_ad = sub.add_parser("create-ad", help="Create a full image ad (upload + post + creative)")
+    p_ad.add_argument("--campaign-id", required=True)
+    p_ad.add_argument("--image-path", required=True, help="Path to ad image file")
+    p_ad.add_argument("--headline", required=True)
+    p_ad.add_argument("--intro-text", required=True)
+    p_ad.add_argument("--cta", choices=VALID_CTAS, default="LEARN_MORE")
+    p_ad.add_argument("--url", required=True, help="Destination URL")
+    p_ad.add_argument("--status", choices=["ACTIVE", "DRAFT"], default="ACTIVE")
+
+    # list-creatives
+    p_list = sub.add_parser("list-creatives")
+    p_list.add_argument("--campaign-id", required=True)
+
+    # pause-creative
+    p_pause = sub.add_parser("pause-creative", help="Pause a specific creative")
+    p_pause.add_argument("--creative-id", required=True, help="Full creative URN")
+
+    # activate-creative
+    p_activate = sub.add_parser("activate-creative", help="Activate a paused creative")
+    p_activate.add_argument("--creative-id", required=True, help="Full creative URN")
+
+    # rotate-creatives
+    p_rotate = sub.add_parser("rotate-creatives", help="Pause old creatives in a campaign")
+    p_rotate.add_argument("--campaign-id", required=True)
+    p_rotate.add_argument("--keep", nargs="*", help="Creative URNs to keep active (pause the rest)")
+    p_rotate.add_argument("--pause-all", action="store_true", help="Pause all active creatives")
 
     args = parser.parse_args()
     account_id = get_env("LINKEDIN_AD_ACCOUNT_ID")
@@ -224,11 +397,19 @@ def main():
         result = update_campaign(account_id, args.campaign_id, updates)
     elif args.command == "upload-image":
         result = upload_image(account_id, args.image_path)
-    elif args.command == "create-creative":
-        result = create_creative(
-            account_id, args.campaign_id, args.image_urn,
-            args.headline, args.intro_text, args.cta, args.url,
+    elif args.command == "create-ad":
+        result = create_ad(
+            account_id, args.campaign_id, args.image_path,
+            args.headline, args.intro_text, args.cta, args.url, args.status,
         )
+    elif args.command == "list-creatives":
+        result = list_creatives(account_id, args.campaign_id)
+    elif args.command == "pause-creative":
+        result = update_creative_status(account_id, args.creative_id, "PAUSED")
+    elif args.command == "activate-creative":
+        result = update_creative_status(account_id, args.creative_id, "ACTIVE")
+    elif args.command == "rotate-creatives":
+        result = rotate_creatives(account_id, args.campaign_id, args.keep, args.pause_all)
     else:
         print(f"Error: Unknown command '{args.command}'", file=sys.stderr)
         sys.exit(1)

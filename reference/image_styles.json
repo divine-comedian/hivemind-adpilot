@@ -1,0 +1,272 @@
+[
+  {
+    "id": 1,
+    "name": "Bronze Dawn",
+    "category": "gradient",
+    "prompt": "Smooth horizontal gradient sweep flowing from deep mahogany #2e0f15 on the left edge to warm bronze #cf995f in the center, fading to soft steel #95b2b8 on the right. Subtle light bloom emanating from the bronze zone creates a gentle glow. Clean, minimal, vast negative space in the upper two-thirds. Cinematic, premium, 4K quality. No objects, no people, no illustrations."
+  },
+  {
+    "id": 2,
+    "name": "Slate Horizon",
+    "category": "gradient",
+    "prompt": "Wide atmospheric gradient with rich navy blue anchoring the bottom third, transitioning through slate #3b6064 into pale steel #95b2b8 at the top. Soft diffused light source from upper left creates subtle luminosity. Expansive negative space dominates the composition. No objects, no people, no illustrations."
+  },
+  {
+    "id": 3,
+    "name": "Golden Hour Wash",
+    "category": "gradient",
+    "prompt": "Gentle diagonal gradient sweep from mahogany #2e0f15 in the lower left corner through muted bronze #cf995f to soft gold #f9dc5c light bloom in the upper right. Ethereal, warm, sophisticated. Generous clean space for text overlay. No objects, no people, no illustrations."
+  },
+  {
+    "id": 4,
+    "name": "Steel Mist Gradient",
+    "category": "gradient",
+    "prompt": "Soft vertical gradient flowing from deep slate #3b6064 at the base through steel #95b2b8 to near-white at the top. Delicate bronze #cf995f light leak entering from right edge. Airy, open, minimal. Cinematic color grading. No objects, no people, no illustrations."
+  },
+  {
+    "id": 5,
+    "name": "Mahogany Glow",
+    "category": "gradient",
+    "prompt": "Rich mahogany #2e0f15 base with warm bronze #cf995f light bloom radiating softly from the lower right quadrant. Gradient fades to darker tones at edges creating subtle vignette. Luxurious depth, abundant negative space above. Premium, moody, elegant. No objects, no people, no illustrations."
+  },
+  {
+    "id": 6,
+    "name": "Navy Ember",
+    "category": "gradient",
+    "prompt": "Deep navy blue gradient transitioning diagonally to mahogany #2e0f15 with a concentrated gold #f9dc5c glow point in the lower third. Light diffuses softly outward. Dramatic yet refined. Clean upper half for headline placement. No objects, no people, no illustrations."
+  },
+  {
+    "id": 7,
+    "name": "Fractured Bronze",
+    "category": "geometric",
+    "prompt": "Abstract geometric composition with sharp angular planes in bronze #cf995f and mahogany #2e0f15. Faceted surfaces catch light differently creating depth. Hard edges soften toward the margins. Generous negative space in slate #3b6064 tones. Architectural, premium, modern. No objects, no people, no illustrations."
+  },
+  {
+    "id": 8,
+    "name": "Slate Prism",
+    "category": "geometric",
+    "prompt": "Subtle triangular geometric forms in layered slate #3b6064 and steel #95b2b8 tones. Angular shadows create dimensional depth. Thin bronze #cf995f accent lines at select edges. Clean, structured, professional. Ample space for text. No objects, no people, no illustrations."
+  },
+  {
+    "id": 9,
+    "name": "Angular Dusk",
+    "category": "geometric",
+    "prompt": "Intersecting diagonal planes in deep mahogany #2e0f15 and navy blue with steel #95b2b8 highlights along edges. Geometric precision with soft gradient transitions between planes. Bold yet restrained. Premium architectural feel with open composition. No objects, no people, no illustrations."
+  },
+  {
+    "id": 10,
+    "name": "Gold Edge",
+    "category": "geometric",
+    "prompt": "Minimalist geometric background in slate #3b6064 with sharp angular accent shapes in gold #f9dc5c emerging from the lower left corner. Clean negative space dominates. Subtle shadows add depth. Sophisticated, modern, high-end advertising aesthetic. No objects, no people, no illustrations."
+  },
+  {
+    "id": 11,
+    "name": "Crystalline Steel",
+    "category": "geometric",
+    "prompt": "Abstract faceted geometric pattern suggesting crystal formations in steel #95b2b8 and slate #3b6064. Bronze #cf995f warm accents at select vertices. Forms concentrated in lower third, fading to clean open space above. Premium, contemporary, dimensional. No objects, no people, no illustrations."
+  },
+  {
+    "id": 12,
+    "name": "Mahogany Shards",
+    "category": "geometric",
+    "prompt": "Sharp angular fragments in deep mahogany #2e0f15 arranged asymmetrically against a steel #95b2b8 gradient background. Subtle gold #f9dc5c highlights catch implied light. Dynamic yet controlled. Abundant negative space. Architectural sophistication. No objects, no people, no illustrations."
+  },
+  {
+    "id": 13,
+    "name": "Brushed Bronze",
+    "category": "texture",
+    "prompt": "Seamless brushed metal texture in warm bronze #cf995f with subtle horizontal grain. Soft vignette darkening to mahogany #2e0f15 at corners. Tactile, luxurious, refined. Even surface with generous space for overlay. Premium material aesthetic, 4K detail. No objects, no people, no illustrations."
+  },
+  {
+    "id": 14,
+    "name": "Slate Stone",
+    "category": "texture",
+    "prompt": "Fine natural stone texture in slate #3b6064 tones with subtle veining in steel #95b2b8. Polished surface with soft directional lighting from above. Organic yet sophisticated. Clean, minimal composition. No objects, no people, no illustrations."
+  },
+  {
+    "id": 15,
+    "name": "Woven Navy",
+    "category": "texture",
+    "prompt": "Subtle woven fabric texture in deep navy blue with threads catching light to reveal steel #95b2b8 undertones. Refined textile pattern barely perceptible. Rich, tactile depth. Soft even lighting, generous negative space. No objects, no people, no illustrations."
+  },
+  {
+    "id": 16,
+    "name": "Hammered Gold",
+    "category": "texture",
+    "prompt": "Delicate hammered metal texture in muted gold #f9dc5c with soft undulating surface. Gentle light play across subtle dimples. Fades to bronze #cf995f at edges. Artisanal luxury feel. Abundant clean space for text. No objects, no people, no illustrations."
+  },
+  {
+    "id": 17,
+    "name": "Concrete Dusk",
+    "category": "texture",
+    "prompt": "Smooth architectural concrete texture in steel #95b2b8 and slate #3b6064 tones. Minimal surface variation. Warm bronze #cf995f light cast subtly from one side. Industrial refinement. Clean, professional, expansive negative space. No objects, no people, no illustrations."
+  },
+  {
+    "id": 18,
+    "name": "Leather Mahogany",
+    "category": "texture",
+    "prompt": "Fine leather grain texture in rich mahogany #2e0f15 with subtle surface variation. Soft highlights in bronze #cf995f tones where light catches. Deep, luxurious, tactile. Even composition with generous space for overlay. No objects, no people, no illustrations."
+  },
+  {
+    "id": 19,
+    "name": "Bronze Aurora",
+    "category": "wave",
+    "prompt": "Flowing luminous ribbons in bronze #cf995f and gold #f9dc5c sweeping diagonally across a deep mahogany #2e0f15 background. Soft ethereal glow along ribbon edges. Organic movement frozen in time. Clean negative space in upper portion. Cinematic elegance. No objects, no people, no illustrations."
+  },
+  {
+    "id": 20,
+    "name": "Steel Current",
+    "category": "wave",
+    "prompt": "Smooth undulating wave forms in steel #95b2b8 and slate #3b6064 flowing horizontally through the lower third. Soft gradients between peaks and valleys. Calm, fluid, sophisticated. Expansive open space above. No objects, no people, no illustrations."
+  },
+  {
+    "id": 21,
+    "name": "Ribbon Dusk",
+    "category": "wave",
+    "prompt": "Elegant curved ribbon shapes in navy blue and bronze #cf995f interweaving through lower portion of frame. Soft depth blur creates dimension. Background fades to dark mahogany #2e0f15. Graceful movement, generous negative space. No objects, no people, no illustrations."
+  },
+  {
+    "id": 22,
+    "name": "Golden Stream",
+    "category": "wave",
+    "prompt": "Single flowing luminous stream in gold #f9dc5c curving through a slate #3b6064 background. Soft glow and motion blur suggest gentle movement. Minimal, elegant, refined. Vast clean space for headline. No objects, no people, no illustrations."
+  },
+  {
+    "id": 23,
+    "name": "Slate Silk",
+    "category": "wave",
+    "prompt": "Smooth silk-like wave undulations in slate #3b6064 with steel #95b2b8 highlights along ridges. Soft, flowing, dimensional. Subtle bronze #cf995f warm light from below. Organic elegance concentrated low, open space above. No objects, no people, no illustrations."
+  },
+  {
+    "id": 24,
+    "name": "Bronze Tide",
+    "category": "wave",
+    "prompt": "Layered horizontal wave bands in bronze #cf995f transitioning to mahogany #2e0f15. Soft organic flow with subtle gradients between layers. Calm, rhythmic, premium. Abundant negative space in upper two-thirds. No objects, no people, no illustrations."
+  },
+  {
+    "id": 25,
+    "name": "Smoke and Bronze",
+    "category": "atmospheric",
+    "prompt": "Soft wisps of smoke in bronze #cf995f and gold #f9dc5c diffusing through deep mahogany #2e0f15 darkness. Ethereal, atmospheric, mysterious. Smoke concentrated in lower third, clean dark space above. Cinematic mood, premium quality. No objects, no people, no illustrations."
+  },
+  {
+    "id": 26,
+    "name": "Steel Fog",
+    "category": "atmospheric",
+    "prompt": "Dense atmospheric fog in steel #95b2b8 and slate #3b6064 tones. Soft depth layers create dimensional haze. Subtle lighter area suggesting hidden light source. Moody, sophisticated, cinematic. Generous negative space throughout. No objects, no people, no illustrations."
+  },
+  {
+    "id": 27,
+    "name": "Amber Bokeh",
+    "category": "atmospheric",
+    "prompt": "Out-of-focus light circles in warm bronze #cf995f and gold #f9dc5c floating against a blurred mahogany #2e0f15 background. Soft, dreamy, premium. Bokeh concentrated in lower third and edges, clean center space. Cinematic advertising aesthetic. No objects, no people, no illustrations."
+  },
+  {
+    "id": 28,
+    "name": "Navy Atmosphere",
+    "category": "atmospheric",
+    "prompt": "Deep atmospheric navy blue with subtle slate #3b6064 fog layers creating depth. Distant bronze #cf995f warm glow at the horizon line. Moody, expansive, sophisticated. Dark upper area provides clean text space. No objects, no people, no illustrations."
+  },
+  {
+    "id": 29,
+    "name": "Mist and Mahogany",
+    "category": "atmospheric",
+    "prompt": "Delicate mist layers in steel #95b2b8 drifting across rich mahogany #2e0f15 depths. Atmospheric, layered, mysterious. Subtle gold #f9dc5c light filtering through. Concentrated atmosphere below, clear space above. No objects, no people, no illustrations."
+  },
+  {
+    "id": 30,
+    "name": "Twilight Haze",
+    "category": "atmospheric",
+    "prompt": "Soft atmospheric gradient from slate #3b6064 through navy blue to mahogany #2e0f15. Gentle bronze #cf995f light bloom diffused through haze. Calm, contemplative, premium. Vast negative space with subtle depth. No objects, no people, no illustrations."
+  },
+  {
+    "id": 31,
+    "name": "Cracked Bronze Macro",
+    "category": "macro",
+    "prompt": "Extreme macro photography of cracked metallic bronze surface #cf995f, shallow depth of field with only center in focus, organic fracture patterns spreading outward, soft mahogany #2e0f15 shadows in deep crevices, film grain texture overlay, left third clear negative space for text, professional product photography lighting. No people, no illustrations."
+  },
+  {
+    "id": 32,
+    "name": "Analog Light Leak",
+    "category": "film",
+    "prompt": "Abstract color field photography with light leak effect, warm bronze #cf995f bleeding into navy #1a1a2e from bottom right corner, authentic 35mm film grain throughout, overexposed zone creating natural negative space on left, slight color shift at edges, nostalgic analog photography mood. No people, no illustrations."
+  },
+  {
+    "id": 33,
+    "name": "Brutalist Shadow Study",
+    "category": "architectural",
+    "prompt": "Architectural photography inspired abstract, harsh geometric shadows cast by unseen angular structure, slate #3b6064 concrete texture base, dramatic mahogany #2e0f15 shadow slicing diagonally across frame, extreme contrast chiaroscuro lighting, modernist aesthetic, generous negative space in shadow zone. No people, no illustrations."
+  },
+  {
+    "id": 34,
+    "name": "Mercury Pool",
+    "category": "macro",
+    "prompt": "Liquid metal abstract surface, steel #95b2b8 mercury-like reflective material pooling with organic curves, bronze #cf995f warm light reflections on curved surfaces, extreme macro perspective, shallow depth of field, ultra-premium tactile quality, clear negative space in blurred foreground. No people, no illustrations."
+  },
+  {
+    "id": 35,
+    "name": "Topographic Mahogany",
+    "category": "geometric",
+    "prompt": "Contour map aesthetic with layered topographic lines, mahogany #2e0f15 base with gold #f9dc5c elevation lines at varying opacity, subtle embossed 3D effect on contour edges, cartographic precision, generous negative space in lower elevation zone, premium minimalist design. No people, no illustrations."
+  },
+  {
+    "id": 36,
+    "name": "Chiaroscuro Fabric Fold",
+    "category": "architectural",
+    "prompt": "Dramatic lighting on abstract draped material, deep mahogany #2e0f15 fabric with single bronze #cf995f light source from upper left, extreme contrast between illuminated folds and shadow depths, renaissance painting lighting technique, silk texture suggestion, large shadow zone for text placement. No people, no illustrations."
+  },
+  {
+    "id": 37,
+    "name": "Long Exposure Bronze Stream",
+    "category": "wave",
+    "prompt": "Light painting aesthetic, flowing bronze #cf995f light trails moving through slate #3b6064 darkness, long exposure photography effect, multiple streams converging toward center, motion blur creating ethereal quality, clear negative space in upper portion, premium abstract motion study. No people, no illustrations."
+  },
+  {
+    "id": 38,
+    "name": "Paper Terrain",
+    "category": "architectural",
+    "prompt": "Origami shadow play abstract, layered paper-cut topography in bronze #cf995f and mahogany #2e0f15, dramatic side lighting casting long shadows, subtle paper texture visible on surfaces, geometric mountain-like forms, large shadow valley creating text space, craft-meets-premium aesthetic. No people, no illustrations."
+  },
+  {
+    "id": 39,
+    "name": "Celestial Dust Field",
+    "category": "atmospheric",
+    "prompt": "Deep space mood abstract, navy-black gradient base with scattered bronze #cf995f and gold #f9dc5c particle dust, no stars or planets—purely atmospheric cosmic dust, subtle steel #95b2b8 nebula wisps, film grain texture, concentrated visual interest in lower right leaving upper space clear. No people, no illustrations."
+  },
+  {
+    "id": 40,
+    "name": "Bisected Contrast",
+    "category": "geometric",
+    "prompt": "Split composition abstract, stark vertical divide between slate #3b6064 zone and mahogany #2e0f15 zone, gold #f9dc5c thin line at junction, different textures each side—smooth versus subtle noise, extreme minimalism, tension at boundary line, full left half as negative space. No people, no illustrations."
+  },
+  {
+    "id": 41,
+    "name": "Oxidized Surface Macro",
+    "category": "macro",
+    "prompt": "Extreme close-up of oxidized metal surface, bronze #cf995f with verdigris-like steel #95b2b8 patina spots, organic corrosion patterns, shallow depth of field blurring to mahogany #2e0f15 at edges, tactile aged metal quality, museum artifact aesthetic, bokeh zone for text placement. No people, no illustrations."
+  },
+  {
+    "id": 42,
+    "name": "Ink Drop Suspension",
+    "category": "atmospheric",
+    "prompt": "High-speed photography aesthetic, gold #f9dc5c pigment suspended mid-dispersion in navy-slate #3b6064 liquid, organic tendrils frozen in time, extreme detail on fluid dynamics, mahogany #2e0f15 gradient depth behind, clear upper negative space, scientific beauty. No people, no illustrations."
+  },
+  {
+    "id": 43,
+    "name": "Architectural Void",
+    "category": "architectural",
+    "prompt": "Extreme perspective looking up into geometric void, slate #3b6064 angular walls converging toward bronze #cf995f light source at apex, dramatic shadows on surfaces, brutalist architecture inspired, strong diagonal lines, lower two-thirds as usable text space in shadow. No people, no illustrations."
+  },
+  {
+    "id": 44,
+    "name": "Striated Stone Macro",
+    "category": "macro",
+    "prompt": "Geological cross-section aesthetic, layered sedimentary bands in bronze #cf995f, mahogany #2e0f15, and steel #95b2b8, natural wave patterns in stone striations, macro photography depth of field, organic geological precision, horizontal banding with clear zone at top for text. No people, no illustrations."
+  },
+  {
+    "id": 45,
+    "name": "Frosted Glass Depth",
+    "category": "architectural",
+    "prompt": "Layered frosted glass planes at varying distances, slate #3b6064 and bronze #cf995f tinted panels, soft diffused light creating depth hierarchy, subtle refraction effects at edges, premium material study, atmospheric haze between layers, sharp foreground element with blurred background text zone. No people, no illustrations."
+  }
+]

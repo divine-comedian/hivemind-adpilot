@@ -1,17 +1,17 @@
 """Tests for li_campaign.py — LinkedIn campaign and creative management."""
 
 import json
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import patch, MagicMock
 
 import pytest
 
 from scripts.li_campaign import (
     create_campaign,
     update_campaign,
-    initialize_image_upload,
-    upload_image_binary,
     upload_image,
-    create_creative,
+    create_ad,
+    list_creatives,
+    update_creative_status,
 )
 
 ACCOUNT_ID = "520217301"
@@ -33,7 +33,6 @@ class TestCreateCampaign:
         )
         assert result["campaign_id"] == "555838300"
 
-        # Verify the request body
         call_kwargs = mock_post.call_args
         body = call_kwargs.kwargs.get("json") or call_kwargs[1].get("json")
         assert body["status"] == "DRAFT"
@@ -83,9 +82,10 @@ class TestUpdateCampaign:
             )
 
 
-class TestImageUpload:
+class TestUploadImage:
+    @patch("scripts.li_campaign.requests.put")
     @patch("scripts.li_campaign.requests.post")
-    def test_initialize_upload_returns_upload_url_and_image_urn(self, mock_post):
+    def test_uploads_image_with_org_owner(self, mock_post, mock_put, tmp_path):
         mock_post.return_value = MagicMock(
             status_code=200,
             json=lambda: {
@@ -95,63 +95,101 @@ class TestImageUpload:
                 }
             },
         )
-        result = initialize_image_upload(account_id=ACCOUNT_ID)
-        assert result["upload_url"] == "https://www.linkedin.com/dms-uploads/xxx"
-        assert result["image_urn"] == "urn:li:image:C4E22AQH1234567890"
-
-    @patch("scripts.li_campaign.requests.put")
-    def test_upload_binary_succeeds(self, mock_put):
         mock_put.return_value = MagicMock(status_code=201)
-        result = upload_image_binary(
-            upload_url="https://www.linkedin.com/dms-uploads/xxx",
-            image_data=b"fake-image-bytes",
-        )
-        assert result["success"] is True
 
-
-class TestUploadImage:
-    @patch("scripts.li_campaign.upload_image_binary")
-    @patch("scripts.li_campaign.initialize_image_upload")
-    def test_chains_initialize_and_upload(self, mock_init, mock_upload, tmp_path):
-        mock_init.return_value = {
-            "upload_url": "https://www.linkedin.com/dms-uploads/xxx",
-            "image_urn": "urn:li:image:C4E22AQH1234567890",
-        }
-        mock_upload.return_value = {"success": True}
-
-        # Create a temp image file
         img_file = tmp_path / "test.png"
         img_file.write_bytes(b"fake-png-data")
 
         result = upload_image(account_id=ACCOUNT_ID, image_path=str(img_file))
         assert result["image_urn"] == "urn:li:image:C4E22AQH1234567890"
-        mock_init.assert_called_once_with(ACCOUNT_ID)
-        mock_upload.assert_called_once_with(
-            "https://www.linkedin.com/dms-uploads/xxx",
-            b"fake-png-data",
-        )
+
+        # Verify org is the owner, not the ad account
+        post_body = mock_post.call_args.kwargs.get("json") or mock_post.call_args[1].get("json")
+        assert "urn:li:organization:" in post_body["initializeUploadRequest"]["owner"]
 
 
-class TestCreateCreative:
+class TestCreateAd:
     @patch("scripts.li_campaign.requests.post")
-    def test_creates_creative_with_image_and_copy(self, mock_post):
-        mock_post.return_value = MagicMock(
-            status_code=201,
-            headers={"x-restli-id": "creative-id-123"},
-            json=lambda: {},
-        )
-        result = create_creative(
-            account_id=ACCOUNT_ID,
-            campaign_id="555838300",
-            image_urn="urn:li:image:C4E22AQH1234567890",
-            headline="Custom Intelligence",
-            intro_text="Get competitive insights for your business.",
-            cta="LEARN_MORE",
-            destination_url="https://aurevon.com",
-        )
-        assert result["creative_id"] == "creative-id-123"
+    @patch("scripts.li_campaign.requests.put")
+    def test_full_3_step_flow(self, mock_put, mock_post, tmp_path):
+        # Mock responses for: upload init, post creation, creative creation
+        mock_post.side_effect = [
+            # Step 1: initialize image upload
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "value": {
+                        "uploadUrl": "https://cdn.linkedin.com/upload/xxx",
+                        "image": "urn:li:image:TEST123",
+                    }
+                },
+            ),
+            # Step 2: create post
+            MagicMock(
+                status_code=201,
+                headers={"x-restli-id": "urn:li:share:999888777"},
+                json=lambda: {},
+            ),
+            # Step 3: create creative (BATCH_CREATE)
+            MagicMock(
+                status_code=200,
+                json=lambda: {
+                    "elements": [{"id": "urn:li:sponsoredCreative:123456", "status": 201}]
+                },
+            ),
+        ]
+        mock_put.return_value = MagicMock(status_code=201)
 
-        # Verify request body structure
-        call_kwargs = mock_post.call_args
-        body = call_kwargs.kwargs.get("json") or call_kwargs[1].get("json")
-        assert body["campaign"] == f"urn:li:sponsoredCampaign:555838300"
+        img_file = tmp_path / "ad.png"
+        img_file.write_bytes(b"fake-ad-image")
+
+        result = create_ad(
+            account_id=ACCOUNT_ID,
+            campaign_id="555838216",
+            image_path=str(img_file),
+            headline="Test Headline",
+            intro_text="Test intro text",
+            cta="LEARN_MORE",
+            destination_url="https://aurevon.ca",
+        )
+
+        assert result["creative_id"] == "urn:li:sponsoredCreative:123456"
+        assert result["share_urn"] == "urn:li:share:999888777"
+        assert result["image_urn"] == "urn:li:image:TEST123"
+        assert mock_post.call_count == 3
+        assert mock_put.call_count == 1
+
+
+class TestListCreatives:
+    @patch("scripts.li_campaign.requests.get")
+    def test_returns_formatted_creatives(self, mock_get):
+        mock_get.return_value = MagicMock(
+            status_code=200,
+            json=lambda: {
+                "elements": [
+                    {
+                        "id": "urn:li:sponsoredCreative:111",
+                        "name": "Ad_1",
+                        "intendedStatus": "ACTIVE",
+                        "isServing": True,
+                        "review": {"status": "APPROVED"},
+                        "content": {"reference": "urn:li:share:222"},
+                    }
+                ]
+            },
+        )
+        result = list_creatives(ACCOUNT_ID, "555838216")
+        assert len(result) == 1
+        assert result[0]["id"] == "urn:li:sponsoredCreative:111"
+        assert result[0]["status"] == "ACTIVE"
+        assert result[0]["serving"] is True
+
+
+class TestUpdateCreativeStatus:
+    @patch("scripts.li_campaign.requests.post")
+    def test_pauses_creative(self, mock_post):
+        mock_post.return_value = MagicMock(status_code=200)
+        result = update_creative_status(
+            ACCOUNT_ID, "urn:li:sponsoredCreative:111", "PAUSED"
+        )
+        assert result["status"] == "PAUSED"
