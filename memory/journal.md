@@ -28,3 +28,104 @@
 - Test more background styles from the 45-style library (especially creative styles 31-45)
 - A/B test copy angles: competitive paranoia vs time scarcity vs information asymmetry
 - Connect PostHog conversion tracking to LinkedIn to measure actual ROI
+
+## 2026-03-14 — The Blind Spot Ad (Full /ads draft flow)
+
+### What Worked
+- Full end-to-end `/ads draft` flow: analyze top performers → hivemind riff on winning patterns → generate image → publish
+- "The Blind Spot" angle: specificity of what competitors know (Google reviews, permits, suppliers) — riffs on the top performer (#1 Ad, 2.26% CTR)
+- Paper Terrain style (#38) produced a strong visual — origami/shadow play in brand colors
+- Shorter image headlines work better: "Stop being the last to know." is punchier than multi-line copy
+- Separating image headline (short, punchy) from LinkedIn headline field (can add "Try it free.") gives flexibility
+
+### Copy Insights
+- Top 3 performing copy patterns (from 4-day cohort, excluding <1 day ads):
+  1. Competitive paranoia: "they ARE tracking you" (2.26% CTR)
+  2. Price anchoring + free preview: "$15K consultants vs free" ($0.41 CPC)
+  3. Betting metaphor + speed: "every decision is a bet" (1.73% CTR)
+- Hivemind produces best results when fed actual performance data + winning copy to riff on
+- "Preview free" doesn't work as standalone text — needs a verb ("Try it free")
+
+### Image Insights
+- LESS TEXT ON IMAGES IS BETTER — short punchy headlines (5-7 words) > long sentences
+- Image headline and LinkedIn headline can be different — image gets the hook, LinkedIn field adds detail
+- Creative styles (31-45) produce more interesting backgrounds than safe corporate styles (1-30)
+- Paper Terrain (#38) is a winner — bookmark for reuse
+
+### Process Insights
+- Always filter analytics by publication date — new ads (<2 days) skew the data
+- Default draft flow: pull creative-level performance → fetch actual copy from posts → identify winning patterns → feed winners to hivemind → generate variations
+- Need a `list-ad-copy` subcommand to avoid manual API calls for fetching post copy
+
+### Recommendations for Next Time
+- Build `list-ad-copy --campaign-id` into li_campaign.py
+- Test more creative styles (31-45) — they produce more distinctive visuals
+- Monitor The Blind Spot ad for 3-4 days before judging performance
+- Try headline-only images (no intro text baked in) to test even more minimal approach
+
+## 2026-03-14 — Batch Rotation (8 images)
+
+### Styles That Worked
+- **#33 Brutalist Shadow Study** (ad1 "Are you tracking them back?") — harsh diagonal shadow, great contrast, instant winner
+- **#27 Amber Bokeh** (ad2 "$25K research. $25 report.") — warm, premium, good text legibility
+- **#36 Chiaroscuro Fabric Fold** (ad4 "Insights that arrive on time.") — dramatic silk lighting
+- **#9 Angular Dusk** (ad5 "Stop betting blind.") — clean geometric planes, good with full logo
+- **#22 Golden Stream** (ad6 "Level the playing field.") — elegant single light trail, minimal
+- **#5 Mahogany Glow** (ad8 "They're researching you already.") — simple dark vignette, lets copy punch
+- **#38 Paper Terrain** (The Blind Spot ad, earlier) — origami shadow play, strong
+
+### Styles That Failed
+- **#40 Bisected Contrast** (ad2 first attempt) — ugly hard split, bad pattern, discarded
+- **#31 Cracked Bronze Macro** (ad5 first attempt) — weird organic texture, looked like a tree stump not premium metal
+- **#25 Smoke and Bronze** (ad6 first attempt) — looked like hellfire/flames, too aggressive
+
+### Image Generation Learnings
+- **Font rendering:** Must explicitly say "no text stroke, no text border, no text outline, no text shadow, no embossing" — OpenAI defaults to adding strokes/borders on some styles
+- **Text placement:** Always upper-left works but should vary — some backgrounds have light areas at top that clash with gold text. Need to specify "place text over the darkest area"
+- **Logo variation:** Should mix `mark` and `full` logo across the set, not use the same one every time
+- **Background noise:** Simpler/calmer backgrounds (gradients, geometric, minimal) consistently outperform busy ones (macro textures, ink drops, high-detail patterns). Noise competes with the headline
+- **Session guard:** generate_image.py now tracks spend/images properly — was missing before this batch
+- **Color contrast:** When background has gold/bronze tones in the upper area, gold text gets lost. Either move text lower or use a style with a dark upper region
+
+### Styles to Bookmark (reliable)
+Tier 1 (proven winners): #5, #9, #22, #27, #33, #36, #38
+Tier 2 (acceptable): #34, #42, #44
+Avoid: #25, #31, #40
+
+### Process Learnings
+- Batch image generation should be wrapped in a proper CLI command, not ad-hoc bash chains
+- Need a `list-ad-copy --campaign-id` subcommand to avoid manual API scripts
+- When rotating, always filter by publication date — don't judge ads with <2 days of data
+
+### Full Rotation Published
+9 active creatives (8 fresh + The Blind Spot), 8 old creatives paused. All new ads keep the same intro text / copy angle as originals but add:
+- Fresh background images from the style library
+- Short punchy image headlines (5-7 words baked into image)
+- LinkedIn headline field (old ads had none)
+
+## 2026-03-14 — End of Day Summary
+
+### What We Built Today
+1. **LinkedIn scripts** — li_analytics.py, li_campaign.py (with create-ad 3-step flow, rotate-creatives, pause/activate), li_auth.py, session_guard.py, config.py
+2. **Image generation** — generate_image.py CLI with 45 background styles, logo handling via images.edit(), session guard integration
+3. **SKILL.md** — full `/ads` skill with status, report, draft, campaign, optimize, rotate commands
+4. **Learning journal** — this file, capturing performance data and creative learnings
+5. **Memory files** — product context, LinkedIn API gotchas, image gen guidelines, CLI design preferences
+
+### Key Discoveries
+- LinkedIn Advertising API requires ad account linked to the product in developer portal (not just OAuth scopes)
+- Creatives endpoint uses version 202509, other endpoints use 202602
+- Ad creation is a 3-step flow: upload image (org owner) → create DSC post → BATCH_CREATE creative
+- LinkedIn posts are immutable — can't swap images, must create new ads to rotate visuals
+- Hivemind = copy only, never visual direction. Image styles are a separate creative decision
+- Less text on images is better. Short punchy headlines (5-7 words) win
+- Simpler backgrounds outperform busy ones. Tier 1 styles: #5, #9, #22, #27, #33, #36, #38
+- Default draft flow: pull performance → fetch copy from top performers → feed to hivemind → generate variations
+- Always filter analytics by publication date before judging creative performance
+
+### Outstanding TODOs for Next Session
+- **Facebook integration:** fb_insights.py and fb_campaign.py — same pattern as LinkedIn scripts. Facebook access token is in .env, account ID act_22243234 confirmed working. Need to build: analytics pulling, campaign management, and cross-platform reporting in /ads report
+- **list-ad-copy subcommand:** add to li_campaign.py so we don't need manual API calls to fetch post content
+- **Batch rotation command:** wrap the generate-all + publish-all + pause-old flow into a single CLI command
+- **PostHog conversion tracking:** connect PostHog events to LinkedIn conversions so we can measure actual ROI, not just clicks
+- **Reference files:** create li_ad_specs.md, fb_ad_specs.md, aurevon_brand.md in reference/

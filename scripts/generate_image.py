@@ -59,7 +59,7 @@ def build_prompt(style: dict, headline: str, logo_type: str) -> str:
 
 Take my brand image (provided) and place it small in the bottom-right corner with generous padding from both the bottom and right edges — do not place it flush against the edge. Reproduce it EXACTLY as provided — do not redraw or reinterpret the logo.
 
-Add this headline in large bold gold sans-serif font, left-aligned in the upper-left area with generous padding:
+Add this headline in large bold gold sans-serif font, left-aligned in the upper-left area with generous padding. The text must be clean and flat — no text stroke, no text border, no text outline, no text shadow, no embossing:
 {headline}
 
 Generate a landscape image at 1536x1024 for a LinkedIn ad."""
@@ -69,6 +69,16 @@ def generate_image(style_id: int, headline: str, logo_type: str, output_path: st
     """Generate an ad image and save to output_path. Returns metadata dict."""
     from openai import OpenAI
     from PIL import Image
+    from scripts.session_guard import SessionGuard, SessionOverLimitError
+
+    # Check session budget before paid API call
+    guard = SessionGuard()
+    try:
+        guard.require_budget(0.20)
+        guard.require_image()
+    except SessionOverLimitError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
 
     style = get_style(style_id)
     logo_path = _LOGOS.get(logo_type)
@@ -86,6 +96,10 @@ def generate_image(style_id: int, headline: str, logo_type: str, output_path: st
         prompt=prompt,
         size="1536x1024",
     )
+
+    # Record spend and image count after successful generation
+    guard.record_spend(0.17)
+    guard.record_image()
 
     image_bytes = base64.b64decode(result.data[0].b64_json)
 
