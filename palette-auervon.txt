@@ -1,0 +1,31 @@
+/* Coolors Exported Palette - https://coolors.co/cf995f-2e0f15-3b6064-95b2b8-f9dc5c */
+
+- CSV
+
+cf995f,2e0f15,3b6064,95b2b8,f9dc5c
+
+- With #
+
+#cf995f, #2e0f15, #3b6064, #95b2b8, #f9dc5c
+
+- Array
+
+["cf995f","2e0f15","3b6064","95b2b8","f9dc5c"]
+
+- Object
+
+{"Light Bronze":"cf995f","Rich Mahogany":"2e0f15","Dark Slate Grey":"3b6064","Cool Steel":"95b2b8","Royal Gold":"f9dc5c"}
+
+- Extended Array
+
+[{"name":"Light Bronze","hex":"cf995f","rgb":[207,153,95],"cmyk":[0,26,54,19],"hsb":[31,54,81],"hsl":[31,54,59],"lab":[67,14,38]},{"name":"Rich Mahogany","hex":"2e0f15","rgb":[46,15,21],"cmyk":[0,67,54,82],"hsb":[348,67,18],"hsl":[348,51,12],"lab":[9,17,3]},{"name":"Dark Slate Grey","hex":"3b6064","rgb":[59,96,100],"cmyk":[41,4,0,61],"hsb":[186,41,39],"hsl":[186,26,31],"lab":[38,-12,-6]},{"name":"Cool Steel","hex":"95b2b8","rgb":[149,178,184],"cmyk":[19,3,0,28],"hsb":[190,19,72],"hsl":[190,20,65],"lab":[71,-9,-6]},{"name":"Royal Gold","hex":"f9dc5c","rgb":[249,220,92],"cmyk":[0,12,63,2],"hsb":[49,63,98],"hsl":[49,93,67],"lab":[88,-4,65]}]
+
+- XML
+
+<palette>
+  <color name="Light Bronze" hex="cf995f" r="207" g="153" b="95" />
+  <color name="Rich Mahogany" hex="2e0f15" r="46" g="15" b="21" />
+  <color name="Dark Slate Grey" hex="3b6064" r="59" g="96" b="100" />
+  <color name="Cool Steel" hex="95b2b8" r="149" g="178" b="184" />
+  <color name="Royal Gold" hex="f9dc5c" r="249" g="220" b="92" />
+</palette>

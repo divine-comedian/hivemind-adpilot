@@ -1,0 +1,50 @@
+{
+  "id": "abstract_growth_ad_compact",
+  "composition": {
+    "headline_safe_zone": { "x": 6, "y": 10, "w": 42, "h": 55 },
+    "logo_safe_zone": { "x": 78, "y": 72, "w": 16, "h": 18 },
+    "motion": "left-to-right upward",
+    "geometry": ["diagonal slabs", "ascending zig-zags", "cropped planes"],
+    "depth": "2.5D"
+  },
+  "color": {
+    "background_shadow": "#230A03",
+    "background_mid": "#4A1D0A",
+    "plane_primary": "#97501F",
+    "plane_secondary": "#B66A2C",
+    "text_primary": "#E69E34"
+  },
+  "materials": {
+    "finish": "matte",
+    "grain": "fine",
+    "roughness": 0.68,
+    "gloss": 0.08,
+    "bevel": "subtle"
+  },
+  "lighting": {
+    "style": "soft cinematic directional",
+    "key_direction": "upper-left",
+    "rim_light": "amber subtle",
+    "shadow_softness": 0.75
+  },
+  "typography": {
+    "classification": "bold neo-grotesque or geometric sans-serif",
+    "weight_range": [700, 800],
+    "tracking": -0.02,
+    "line_height": 0.9,
+    "alignment": "left",
+    "color": "#E69E34"
+  },
+  "logo": {
+    "placement": "bottom-right",
+    "treatment": "full-color mark, no container, generous clear space"
+  },
+  "restrictions": [
+    "no people",
+    "no literal objects",
+    "no photoreal scenes",
+    "no busy patterns",
+    "no neon",
+    "no extra text"
+  ]
+}

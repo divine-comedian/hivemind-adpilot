@@ -225,7 +225,51 @@
     "id": 38,
     "name": "Paper Terrain",
     "category": "architectural",
-    "prompt": "Origami shadow play abstract, layered paper-cut topography in bronze #cf995f and mahogany #2e0f15, dramatic side lighting casting long shadows, subtle paper texture visible on surfaces, geometric mountain-like forms, large shadow valley creating text space, craft-meets-premium aesthetic. No people, no illustrations."
+    "composition": {
+      "headline_safe_zone": { "x": 5, "y": 20, "w": 50, "h": 40 },
+      "logo_safe_zone": { "x": 75, "y": 65, "w": 20, "h": 25 },
+      "motion": "left-to-right upward",
+      "geometry": ["layered paper-cut mountains", "origami folds", "ascending diagonal slabs"],
+      "depth": "2.5D"
+    },
+    "color": {
+      "background_shadow": "#2e0f15",
+      "background_mid": "#5a2a1a",
+      "plane_primary": "#97501F",
+      "plane_secondary": "#cf995f",
+      "text_primary": "#E69E34"
+    },
+    "materials": {
+      "finish": "matte",
+      "grain": "fine paper texture",
+      "roughness": 0.7,
+      "gloss": 0.05,
+      "bevel": "crisp fold edges"
+    },
+    "lighting": {
+      "style": "dramatic side lighting",
+      "key_direction": "upper-left",
+      "rim_light": "none",
+      "shadow_softness": 0.3
+    },
+    "typography": {
+      "font": "Geist-Bold",
+      "size_pct": 11,
+      "color": "#E69E34",
+      "alignment": "left",
+      "line_height": 1.15
+    },
+    "logo": {
+      "placement": "bottom-right"
+    },
+    "restrictions": [
+      "no people",
+      "no literal objects",
+      "no photoreal scenes",
+      "no busy patterns",
+      "no neon",
+      "no extra text"
+    ]
   },
   {
     "id": 39,
