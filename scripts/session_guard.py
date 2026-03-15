@@ -37,7 +37,10 @@ class SessionGuard:
 
     def _load_state(self) -> dict:
         if self._state_file.exists():
-            state = json.loads(self._state_file.read_text())
+            try:
+                state = json.loads(self._state_file.read_text())
+            except (json.JSONDecodeError, KeyError):
+                return self._fresh_state()
             elapsed = time.time() - state.get("session_start", 0)
             if elapsed > self._window_seconds:
                 return self._fresh_state()

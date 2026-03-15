@@ -119,7 +119,11 @@ def initialize_image_upload(account_id: str) -> dict:
 
 
 def upload_image_binary(upload_url: str, image_data: bytes) -> dict:
-    """Upload image binary data to LinkedIn CDN."""
+    """Upload image binary data to LinkedIn CDN.
+
+    Uses manual auth header (not linkedin_headers()) because the upload URL
+    is a CDN endpoint that doesn't require Rest.li version headers.
+    """
     headers = {
         "Authorization": f"Bearer {get_env('LINKEDIN_ACCESS_TOKEN')}",
         "Content-Type": "application/octet-stream",
@@ -225,6 +229,9 @@ def main():
             account_id, args.campaign_id, args.image_urn,
             args.headline, args.intro_text, args.cta, args.url,
         )
+    else:
+        print(f"Error: Unknown command '{args.command}'", file=sys.stderr)
+        sys.exit(1)
 
     json.dump(result, sys.stdout, indent=2)
     print()
