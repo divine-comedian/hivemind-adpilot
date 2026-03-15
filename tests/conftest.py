@@ -10,3 +10,5 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("LINKEDIN_ACCESS_TOKEN", "test-token-123")
     monkeypatch.setenv("LINKEDIN_AD_ACCOUNT_ID", "520217301")
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
+    monkeypatch.setenv("FACEBOOK_ACCESS_TOKEN", "test-fb-token-456")
+    monkeypatch.setenv("FACEBOOK_AD_ACCOUNT_ID", "22243234")

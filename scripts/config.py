@@ -29,3 +29,10 @@ def linkedin_headers() -> dict:
 
 
 LINKEDIN_BASE_URL = "https://api.linkedin.com/rest"
+
+FACEBOOK_BASE_URL = "https://graph.facebook.com/v25.0"
+
+
+def facebook_params() -> dict:
+    """Return default query params with Facebook access token."""
+    return {"access_token": get_env("FACEBOOK_ACCESS_TOKEN")}
