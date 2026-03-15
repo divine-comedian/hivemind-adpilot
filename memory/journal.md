@@ -124,8 +124,45 @@ Avoid: #25, #31, #40
 - Always filter analytics by publication date before judging creative performance
 
 ### Outstanding TODOs for Next Session
-- **Facebook integration:** fb_insights.py and fb_campaign.py — same pattern as LinkedIn scripts. Facebook access token is in .env, account ID act_22243234 confirmed working. Need to build: analytics pulling, campaign management, and cross-platform reporting in /ads report
+- ~~**Facebook integration:** fb_insights.py and fb_campaign.py~~ — DONE (2026-03-15)
 - **list-ad-copy subcommand:** add to li_campaign.py so we don't need manual API calls to fetch post content
 - **Batch rotation command:** wrap the generate-all + publish-all + pause-old flow into a single CLI command
 - **PostHog conversion tracking:** connect PostHog events to LinkedIn conversions so we can measure actual ROI, not just clicks
 - **Reference files:** create li_ad_specs.md, fb_ad_specs.md, aurevon_brand.md in reference/
+- **Cross-platform reporting:** update /ads report to pull both LinkedIn + Facebook data side by side
+
+## 2026-03-15 — Facebook Ad Publishing (First E2E)
+
+### What We Built
+1. **fb_campaign.py** — Full Facebook campaign/ad management CLI (12 subcommands):
+   - Discovery: `list-campaigns`, `list-adsets`, `list-ads` (by campaign or adset)
+   - Campaign: `create-campaign`, `update-campaign`
+   - Ad sets: `create-adset` (auto-detects campaign budget + optimization goal), `update-adset`
+   - Ads: `create-ad` (3-step: upload + creative + ad), `create-full-ad` (4-step: adset + upload + creative + ad)
+   - Status: `pause-ad`, `activate-ad`, `upload-image`
+2. **Default ICP targeting** baked into `DEFAULT_FLEXIBLE_SPEC` — `--interests default` (the default) applies Aurevon's ICP without needing a JSON file
+3. **First Facebook ad published:** "Fire Your Consultant — Price Anchor" under campaign 6952504195779, ad ID 6955623866979
+
+### Facebook API Quirks (vs LinkedIn)
+- **4-layer hierarchy:** Campaign → Ad Set → Ad Creative → Ad (LinkedIn is 3: Campaign → Post → Creative)
+- **Campaign-level budget:** If campaign has `daily_budget`, adsets CANNOT also set one — must auto-detect via `_get_campaign_info()`
+- **Optimization goal lock:** All adsets in a lowest-cost campaign must share the same `optimization_goal` — auto-detect from existing adsets
+- **Advantage+ audience:** Required flag `targeting_automation.advantage_audience`. When enabled, age_min capped at 25, age_max floored at 65. Real age targeting comes from interest/behavior signals, not hard constraints
+- **Auth via query params:** Facebook uses `access_token` as query param (vs LinkedIn's `Authorization` header + Rest.li version headers)
+- **Image upload returns hash:** Facebook stores images by hash (not URN). Upload returns `image_hash` used in creative's `object_story_spec.link_data`
+- **Budgets in cents:** Facebook budgets are in cents ($25 = 2500), different from LinkedIn's float format
+
+### Copy Insights
+- **Hivemind** produced strong price-anchoring copy when given full context: product details, angle, audience, format constraints
+- Piping multi-line prompts via stdin to `hivemind ghostwriter` is the cleanest workflow for detailed briefs
+- Image headline ("Fire your expensive consultant") + different Facebook headline ("Same Intel. 200x Cheaper. Ready Now.") = good complementary pairing — same angle, different hooks
+
+### Targeting Insights
+- Aurevon ICP targeting: Small business, Entrepreneurship, Business analytics, Marketing, Business leaders + Small business owners behavior + Business Decision Makers industry
+- Dropped hospitality/restaurant interests from the original broad adset — too far from competitive intelligence buyers
+- Facebook Page ID for Aurevon Intelligence: 973778689159824 (discovered via /me/accounts, NOT the ID the user suggested)
+
+### Process Learnings
+- Always verify Page IDs via `/me/accounts` API — the ID in Meta Business Suite URL is often wrong
+- Build CLI scripts iteratively: basic version first, then fix API quirks as they surface during real e2e testing
+- Default ICP targeting baked into the script (`--interests default`) eliminates the manual JSON step for every ad creation

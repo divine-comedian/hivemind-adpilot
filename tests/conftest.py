@@ -12,3 +12,4 @@ def mock_env(monkeypatch):
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
     monkeypatch.setenv("FACEBOOK_ACCESS_TOKEN", "test-fb-token-456")
     monkeypatch.setenv("FACEBOOK_AD_ACCOUNT_ID", "22243234")
+    monkeypatch.setenv("FACEBOOK_PAGE_ID", "123456789")
