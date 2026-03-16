@@ -166,3 +166,44 @@ Avoid: #25, #31, #40
 - Always verify Page IDs via `/me/accounts` API — the ID in Meta Business Suite URL is often wrong
 - Build CLI scripts iteratively: basic version first, then fix API quirks as they surface during real e2e testing
 - Default ICP targeting baked into the script (`--interests default`) eliminates the manual JSON step for every ad creation
+
+## 2026-03-15 — Pixel & Insight Tag Installation
+
+### What We Built
+1. **Facebook Pixel** (ID: 2038438126722898) — created via API, installed in aurevon frontend
+   - `components/facebook-pixel.tsx` — loads pixel, fires PageView on every page
+   - `trackFbEvent("Lead")` on successful demo report creation
+   - `trackFbEvent("InitiateCheckout")` on OTP flow start
+2. **LinkedIn Insight Tag** (Partner ID: 8940172) — installed from LinkedIn-provided snippet
+   - `components/linkedin-insight-tag.tsx` — loads tag, fires pageview on every page
+   - `trackLinkedInConversion()` helper ready for conversion IDs from Campaign Manager
+3. **Production-only guard** — both gated on `NEXT_PUBLIC_VERCEL_ENV === "production"`
+4. **Type declarations** — `types/ad-pixels.d.ts` for `window.fbq` and `window.lintrk`
+
+### Key Decisions
+- Facebook Pixel partner ID ≠ ad account ID. Created fresh pixel via `POST act_{id}/adspixels`
+- LinkedIn Insight Tag partner ID (8940172) ≠ ad account ID (520217301). Got snippet from LinkedIn Campaign Manager UI
+- Used Next.js `<Script strategy="afterInteractive">` for both — non-blocking, loads after page hydration
+- Events fire alongside existing PostHog events in demo-form.tsx, not as replacements
+
+### Audience Strategy Defined
+- **Layer 1 (now):** Website retargeting — all aurevon.ca visitors via pixel (need data to accumulate)
+- **Layer 2 (once 100+ visitors):** 1% Lookalike from website visitors (Canada)
+- **Layer 3 (existing):** Interest-based cold targeting via DEFAULT_FLEXIBLE_SPEC
+- Copy strategy varies by funnel stage: cold = competitive paranoia, warm retarget = "try it free", hot = urgency
+
+### Performance Snapshot (30-day, as of 2026-03-15)
+- **Facebook:** $142 CAD spent, 549 clicks, 516 landing page views, $0.25 CPC, 1.5% CTR
+- **LinkedIn:** ~$104 CAD spent, 172 clicks, $0.41-4.72 CPC, 0.15-2.3% CTR (high variance)
+- Zero tracked conversions on both — pixel installation fixes this going forward
+
+### Env Vars Added to Vercel (production only)
+- `NEXT_PUBLIC_FACEBOOK_PIXEL_ID=2038438126722898`
+- `NEXT_PUBLIC_LINKEDIN_PARTNER_ID=8940172`
+
+### Outstanding TODOs
+- Add `list-audiences`, `create-website-audience`, `create-lookalike` to fb_campaign.py
+- Set up LinkedIn conversion rules in Campaign Manager, get conversion IDs
+- Wire `trackLinkedInConversion()` into demo-form.tsx once conversion IDs exist
+- Cross-platform reporting (/ads report pulling both platforms)
+- `list-ad-copy --campaign-id` for li_campaign.py
