@@ -139,7 +139,7 @@ def regenerate_draft(draft_id: str):
     try:
         gi.generate_image(style_id=1, headline=d["headline"], logo_type="mark", output_path=str(image_path), ad_format="feed")
         img = str(image_path)
-    except Exception:
+    except (Exception, SystemExit):
         img = ""
 
     row = {

@@ -73,7 +73,7 @@ async def generate_stream(payload: str, request: Request):
                         ad_format="feed",
                     )
                     img_path_str = str(image_path)
-                except Exception:
+                except (Exception, SystemExit):
                     img_path_str = ""
 
                 row = {

@@ -59,7 +59,7 @@ async def diagnose_stream(request: Request):
                         ad_format="feed",
                     )
                     img = str(image_path)
-                except Exception:
+                except (Exception, SystemExit):
                     img = ""
                 drafts_db().insert_draft({
                     "id": draft_id,
