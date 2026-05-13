@@ -5,3 +5,5 @@ __pycache__/
 .pytest_cache/
 memory/session_state.json
 .claude/
+node_modules/
+.next/
