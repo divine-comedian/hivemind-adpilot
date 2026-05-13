@@ -1,26 +1,41 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-paper:      #F7F3EC;
+  --color-surface:    #FFFFFE;
+  --color-ink:        #1A1714;
+  --color-ink-muted:  #5C544A;
+  --color-hairline:   #E5DDD0;
+  --color-accent:     #BE3A2C;
+  --color-accent-soft:#F5E0DC;
+  --color-positive:   #2F7D52;
+  --color-negative:   #8C2A1F;
+  --color-highlight:  #E8B449;
+
+  --font-display:     "var(--font-display)";
+  --font-body:        "var(--font-body)";
+  --font-mono:        "var(--font-mono)";
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html, body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-body), system-ui, sans-serif;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(0,0,0,0.025) 1px, transparent 0);
+  background-size: 24px 24px;
+}
+
+.font-display { font-family: var(--font-display), serif; }
+.font-mono    { font-family: var(--font-mono), monospace; }
+
+::selection { background: var(--color-accent); color: var(--color-paper); }
+
+:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
