@@ -53,6 +53,7 @@ async function j<T>(path: string, init?: RequestInit): Promise<T> {
 export const api = {
   createWorkspace: (body: unknown) => j<WorkspaceState>("/workspace", { method: "POST", body: JSON.stringify(body) }),
   getWorkspace: () => j<WorkspaceState | null>("/workspace/me"),
+  patchFocus: (focus_notes: string) => j<WorkspaceState>("/workspace", { method: "PATCH", body: JSON.stringify({ focus_notes }) }),
   listDrafts: () => j<Draft[]>("/drafts"),
   getDraft: (id: string) => j<Draft>(`/drafts/${id}`),
   pushDraft: (id: string, body: { platform: "linkedin" | "facebook"; campaign_id?: string }) =>

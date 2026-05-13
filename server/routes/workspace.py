@@ -92,6 +92,23 @@ def get_workspace():
     return workspace_store().load()
 
 
+from pydantic import BaseModel as _PydBaseModel
+
+
+class FocusPatch(_PydBaseModel):
+    focus_notes: str
+
+
+@router.patch("/workspace")
+def patch_workspace(body: FocusPatch):
+    state = workspace_store().load()
+    if not state:
+        raise HTTPException(404, "no workspace")
+    state["business"]["focus_notes"] = body.focus_notes
+    workspace_store().save(state)
+    return state
+
+
 def _kick_off_reports(project_id: str, description: str, audiences: list[str]) -> None:
     """Runs after the HTTP response is sent. Never blocks the client."""
     hm = hivemind()
