@@ -5,10 +5,11 @@ and persisting state. Intelligence reports are kicked off in a background task
 so the user never waits on them.
 """
 
+import asyncio
 import os
 import uuid
 from datetime import datetime, timezone
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, HTTPException
 from server.deps import hivemind, workspace_store, poller
 from server.models import OnboardIn
 from server.platforms import linkedin as li
@@ -19,7 +20,7 @@ router = APIRouter()
 
 
 @router.post("/workspace", status_code=201)
-def create_workspace(payload: OnboardIn, background_tasks: BackgroundTasks):
+async def create_workspace(payload: OnboardIn):
     # 1. Validate platform tokens fast
     ok_li, msg_li = li.validate_token(payload.linkedin.access_token)
     if not ok_li:
@@ -82,7 +83,9 @@ def create_workspace(payload: OnboardIn, background_tasks: BackgroundTasks):
     workspace_store().save(state)
 
     # 4. Kick off intelligence reports in background after the response is sent
-    background_tasks.add_task(_kick_off_reports, project_id, payload.business.description, payload.business.audiences)
+    # Schedule report kickoff on the running event loop so the poller's
+    # asyncio.create_task in track() actually has a loop available.
+    asyncio.create_task(_kick_off_reports_async(project_id, payload.business.description, payload.business.audiences))
 
     return state
 
@@ -109,8 +112,8 @@ def patch_workspace(body: FocusPatch):
     return state
 
 
-def _kick_off_reports(project_id: str, description: str, audiences: list[str]) -> None:
-    """Runs after the HTTP response is sent. Never blocks the client."""
+async def _kick_off_reports_async(project_id: str, description: str, audiences: list[str]) -> None:
+    """Runs on the main event loop after the HTTP response is sent. Never blocks the client."""
     hm = hivemind()
     p = poller()
     for report_type in ("competitive_intelligence", "attention_landscape"):
