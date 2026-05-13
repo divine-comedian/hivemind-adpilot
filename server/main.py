@@ -13,6 +13,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from server.routes import events
+
+app.include_router(events.router)
+
 
 @app.get("/health")
 def health() -> dict:
