@@ -7,3 +7,6 @@ memory/session_state.json
 .claude/
 node_modules/
 .next/
+
+# AdPilot runtime state
+workspace/
