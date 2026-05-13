@@ -65,13 +65,17 @@ def push_draft(draft_id: str, body: PushIn):
 
     click_url = state["business"]["website"]
 
+    # Hackathon fallback: pull default ad container from env if client didn't supply
+    campaign_id = body.campaign_id or os.environ.get("LI_DEFAULT_CAMPAIGN_ID", "")
+    adset_id = body.adset_id or os.environ.get("FB_DEFAULT_ADSET_ID", "")
+
     if body.platform == "linkedin":
-        if not body.campaign_id:
-            raise HTTPException(400, "campaign_id required for LinkedIn push")
+        if not campaign_id:
+            raise HTTPException(400, "campaign_id required for LinkedIn push (or set LI_DEFAULT_CAMPAIGN_ID env)")
         from scripts.li_campaign import create_ad as li_create_ad
         result = li_create_ad(
             account_id=li["account_id"],
-            campaign_id=body.campaign_id,
+            campaign_id=campaign_id,
             image_path=d["image_path"],
             headline=d["headline"],
             intro_text=d["body"],
@@ -82,8 +86,8 @@ def push_draft(draft_id: str, body: PushIn):
         urn = result["creative_id"]
         url = f"https://www.linkedin.com/campaignmanager/accounts/{li['account_id']}/creatives/"
     elif body.platform == "facebook":
-        if not body.adset_id:
-            raise HTTPException(400, "adset_id required for Facebook push")
+        if not adset_id:
+            raise HTTPException(400, "adset_id required for Facebook push (or set FB_DEFAULT_ADSET_ID env)")
         from scripts.fb_campaign import upload_image as fb_upload, create_ad_creative, create_ad as fb_create_ad
         img = fb_upload(account_id=fb["account_id"], image_path=d["image_path"])
         creative = create_ad_creative(
@@ -96,7 +100,7 @@ def push_draft(draft_id: str, body: PushIn):
         )
         ad = fb_create_ad(
             account_id=fb["account_id"],
-            adset_id=body.adset_id,
+            adset_id=adset_id,
             creative_id=creative["creative_id"],
             name=d["headline"][:40],
             status="PAUSED",
