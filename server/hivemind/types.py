@@ -43,6 +43,7 @@ class StrategistOutput(TypedDict):
 
 class DiagnoseKillRec(TypedDict):
     target_id: str
+    platform: str
     reasoning: str
     framework_cited: str | None
 

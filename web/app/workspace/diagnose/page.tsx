@@ -11,7 +11,7 @@ const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
 interface DiagnoseResult {
   diagnose_id: string;
   summary: string;
-  kill_recommendations: { target_id: string; reasoning: string; framework_cited: string | null }[];
+  kill_recommendations: { target_id: string; platform: string; reasoning: string; framework_cited: string | null }[];
   replacement_drafts: { draft_id: string; headline: string; body: string; rationale: string }[];
   tier: "A" | "B";
 }
@@ -42,11 +42,7 @@ export default function DiagnosePage() {
     });
   };
 
-  const acceptKill = async (target_id: string) => {
-    // Heuristic: LinkedIn creative IDs are long numeric strings on the URN end, Facebook ad IDs are also numeric.
-    // For now require platform info — backend will accept either with platform field.
-    // Default to linkedin if ambiguous; user can adjust by re-running diagnose if needed.
-    const platform = target_id.startsWith("urn:li:") || /^\d{10,}$/.test(target_id) ? "linkedin" : "facebook";
+  const acceptKill = async (target_id: string, platform: string) => {
     try {
       await api.acceptDiagnose({ action: "kill", target_id, platform });
       setKilled((prev) => new Set([...prev, target_id]));
@@ -93,7 +89,7 @@ export default function DiagnosePage() {
                       </div>
                       <Button
                         variant={isKilled ? "secondary" : "danger"}
-                        onClick={() => acceptKill(k.target_id)}
+                        onClick={() => acceptKill(k.target_id, k.platform)}
                         disabled={isKilled}
                       >
                         {isKilled ? "Paused ✓" : "Approve pause"}

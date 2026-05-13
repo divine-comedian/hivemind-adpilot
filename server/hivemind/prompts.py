@@ -57,13 +57,15 @@ Output JSON:
 {
   "summary": "2-3 paragraphs of editorial prose — name the underlying pattern, cite a framework",
   "kill_recommendations": [
-    {"target_id": "ad-id", "reasoning": "...", "framework_cited": "name | null"}
+    {"target_id": "ad-id", "platform": "linkedin | facebook", "reasoning": "...", "framework_cited": "name | null"}
   ],
   "replacement_angles": [
     {"id": "r1", "angle": "...", "rationale": "...", "framework_cited": "name | null"}
   ],
   "tier": "A" | "B"
 }
+
+The `platform` field on each kill_recommendation MUST match the platform of the corresponding ad in performance_data — read it from the row's `platform` field.
 
 Only recommend killing an ad if its CTR is in the bottom decile AND it has at least $5 spend, OR
 it has > 1000 impressions and zero clicks. If no ads meet criteria, return empty kill_recommendations.
