@@ -13,12 +13,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-from server.routes import events, workspace, generate, drafts
+from server.routes import events, workspace, generate, drafts, analytics
 
 app.include_router(events.router)
 app.include_router(workspace.router)
 app.include_router(generate.router)
 app.include_router(drafts.router)
+app.include_router(analytics.router)
 
 
 @app.get("/health")
