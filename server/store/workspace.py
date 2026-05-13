@@ -28,4 +28,6 @@ class WorkspaceStore:
         with self._lock:
             data = self.load() or {}
             data.setdefault("hivemind", {}).setdefault("reports", {})[report_type] = status_dict
-            self.path.write_text(json.dumps(data, indent=2, default=str))
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, indent=2, default=str))
+            tmp.replace(self.path)
