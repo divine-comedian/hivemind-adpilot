@@ -9,4 +9,4 @@ node_modules/
 .next/
 
 # AdPilot runtime state
-workspace/
+/workspace/
