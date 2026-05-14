@@ -1,12 +1,14 @@
 # AdPilot — Build Status & Next Steps
 
-**Last updated:** 2026-05-14
+**Last updated:** 2026-05-14 (post-audit revision)
 **Branch:** master
 **Hackathon deadline:** 09:00 today (Day 3) — submission closes
 
 ## Where we are
 
-Implementation complete across all 10 phases of `docs/superpowers/plans/2026-05-13-adpilot-hackathon.md`. 37 commits on master (`63e38ec` → `519c6a8`). 85 backend tests passing. Next.js builds clean.
+Implementation complete across all 10 phases of `docs/superpowers/plans/2026-05-13-adpilot-hackathon.md`. **42 commits** on master (`63e38ec` → `3442e35`). 85 backend tests passing. Next.js builds clean.
+
+The full codebase audit landed in `docs/audit-2026-05-14.md`. 4 high-priority findings and 4 medium ones fixed; deferred items documented. See **Audit fixes** section below.
 
 **Not yet done:** live smoke test with real Hivemind/LinkedIn/Facebook keys → Loom recording → submission form.
 
@@ -25,8 +27,9 @@ Implementation complete across all 10 phases of `docs/superpowers/plans/2026-05-
 | 9. Diagnose SSE + accept + page | ✅ | 2 commits |
 | 10. Prewarm script + README + HACKATHON.md | ✅ | 3 commits |
 | Post-review fixes (5 issues) | ✅ | 5 commits |
+| Codebase audit (8 findings) | ✅ | 4 commits |
 
-## Critical fixes applied during review
+## Critical fixes applied during post-implementation review
 
 These were caught by the final code reviewer and patched (`a3175fe` through `519c6a8`):
 
@@ -35,6 +38,35 @@ These were caught by the final code reviewer and patched (`a3175fe` through `519
 3. **SystemExit propagation.** `scripts/generate_image.py` calls `sys.exit(1)` on budget exhaustion. Now caught in all three places that invoke it.
 4. **Diagnose kill platform attribution.** Was a broken regex heuristic on the frontend. Now `DiagnoseKillRec` carries a `platform` field that the Strategist must populate.
 5. **Atomic write in `update_report_status`.** Now matches `save()` tmp-file pattern.
+
+## Audit fixes (2026-05-14)
+
+Full report at `docs/audit-2026-05-14.md`. Eight findings fixed across 4 commits (`dcbacd5`, `a69f038`, `195c6a4`, `3442e35`):
+
+**High-priority:**
+
+1. **`.env.example` missing required vars.** Fresh checkouts couldn't run — `OPENAI_API_KEY`, `LINKEDIN_ACCESS_TOKEN`, `FACEBOOK_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID` were all absent. Now complete.
+2. **Server restart silently broke workspace.** Tokens were written to `workspace/.tokens.env` but never loaded back. Every restart forced a re-onboard. Fixed with a `lifespan` hook in `server/main.py` that re-populates `os.environ` from disk on startup.
+3. **Path traversal in `/api/image`.** `p.includes("/workspace/")` is bypassable (e.g. `/etc/workspace/../../etc/passwd`). Now resolves the absolute path and requires it to live under the actual workspace directory.
+4. **`api.pushDraft` missing `adset_id` type.** Frontend couldn't pass a Facebook adset id even if it wanted to. Type extended; return value typed as `{external_urn, external_url}` instead of `unknown`.
+
+**Dead/redundant code pruned:**
+
+5. **Duplicated env-setup boilerplate** across `drafts.py`, `analytics.py`, `diagnose.py` — same 4 lines copied. Removed entirely; startup loader + canonical names handle it.
+6. **`LINKEDIN_TOKEN` / `FACEBOOK_TOKEN` indirection.** Onboarding wrote tokens under one name but `scripts/*.py` read another, forcing every route to alias. Now writes canonical `LINKEDIN_ACCESS_TOKEN` / `FACEBOOK_ACCESS_TOKEN` / `FACEBOOK_PAGE_ID` directly.
+7. **Dead `token_ref` field** in workspace state — never read. Removed.
+8. **Late `BaseModel` import** at `workspace.py:98` (with a vestigial `_PydBaseModel` alias) — moved to top of file.
+
+**Hygiene:**
+
+- `drafts/2026-*/` and `samples/` added to `.gitignore` so future generated artifacts aren't tracked (existing tracked PNGs left alone — purging history not worth the risk during hackathon).
+- All planning docs (spec, plan, STATUS, audit) committed to git — were untracked before.
+
+**Deferred items** (documented in audit report, not blocking):
+
+- 112MB of generated drafts already in git history — needs `git filter-repo` to remove cleanly; post-hackathon.
+- `scripts/prewarm_aurevon.py` imports from `server/` (reverses original layering) — low impact.
+- Aurevon-specific brand hardcoding in `scripts/` — known limitation; onboarding collects values but doesn't pipe them through to the scripts layer. Acceptable for the demo (which runs on Aurevon's own account).
 
 ## What is NOT verified
 
@@ -50,20 +82,9 @@ Live integration depends on real API keys we haven't run with:
 
 ### 1. Fill `.env` (5 min)
 
-Copy `.env.example` to `.env` and fill:
+Copy `.env.example` to `.env` and fill every empty value. The file is now complete — it lists all required and optional vars including the new `LI_DEFAULT_CAMPAIGN_ID` / `FB_DEFAULT_ADSET_ID` fallbacks for push and the optional `AUREVON_PROJECT_ID` for prewarm.
 
-```
-HIVEMIND_API_KEY=
-HIVEMIND_INTELLIGENCE_API_KEY=
-HIVEMIND_BASE_URL=https://hivemind.myosin.xyz
-OPENAI_API_KEY=
-LINKEDIN_ACCESS_TOKEN=
-FACEBOOK_ACCESS_TOKEN=
-
-# New — needed for push to work without explicit IDs in payload
-LI_DEFAULT_CAMPAIGN_ID=
-FB_DEFAULT_ADSET_ID=
-```
+Onboarding will also persist a subset of these (`LINKEDIN_ACCESS_TOKEN`, `FACEBOOK_ACCESS_TOKEN`, `FACEBOOK_PAGE_ID`) to `workspace/.tokens.env`, which the server reloads on every restart — so once onboarded, you don't need to re-fill those manually.
 
 ### 2. Pre-warm Aurevon intelligence reports (RUN ASAP — up to 1h)
 
@@ -118,6 +139,7 @@ Use `HACKATHON.md` at repo root as the source. Paste fields into the submission 
 - **Style ID is hardcoded to `1`** in image gen calls. All drafts will use the same visual style. If demo polish matters: randomize across available style ids (see `scripts/generate_image.py:list_styles()`).
 - **No webhook for intelligence completion.** Poller hits every 60s. If demo viewers expect instant feedback, mention this in the voiceover and tie it to the "product opportunity" section.
 - **Drafts list returns `[]` instead of 404 when no workspace exists.** Low-stakes UX paper cut.
+- **`/api/v1/chat` request shape still unverified.** Day-of check against Hivemind's docs is still pending — see step 3 of immediate next steps.
 
 ## Quick file map
 
@@ -125,6 +147,7 @@ Use `HACKATHON.md` at repo root as the source. Paste fields into the submission 
 docs/
   specs/2026-05-13-adpilot-hackathon-design.md   ← full spec
   superpowers/plans/2026-05-13-adpilot-hackathon.md  ← implementation plan (30 tasks)
+  audit-2026-05-14.md                            ← codebase audit + fixes applied
   STATUS.md                                      ← this file
 HACKATHON.md                                     ← submission form draft
 README.md                                        ← judge-readable walkthrough
@@ -168,9 +191,11 @@ scripts/                 ← existing Aurevon scripts, reused unchanged
 
 - **Poller never polls:** confirm `server/routes/workspace.py:create_workspace` is `async def` and uses `asyncio.create_task`.
 - **Push 400s:** confirm `LI_DEFAULT_CAMPAIGN_ID` / `FB_DEFAULT_ADSET_ID` are in `.env` and the server was restarted after edits.
+- **Push fails after server restart with "token not set":** confirm `workspace/.tokens.env` exists and is being read by the startup loader (check server logs at boot — the loader is silent on success but populates `os.environ`). If the file is missing, re-onboard.
 - **Chain trace doesn't show:** check browser network tab for the SSE connection. CORS issues will be visible there.
 - **Hivemind 401s:** keys are scoped per-project. Confirm Aurevon's project_id is in the key's scope.
 - **Image gen fails:** check OpenAI quota and `scripts/session_guard.py` cap state.
+- **Image proxy returns 403:** path must resolve to under `<repo>/workspace/`. The image proxy now enforces this strictly.
 
 ## Spec deviations / decisions during build
 
@@ -178,3 +203,4 @@ scripts/                 ← existing Aurevon scripts, reused unchanged
 - Plan said `style_index=None` for random image gen. Real signature requires `style_id: int`. Hardcoded to `1`.
 - Push endpoint fell back to env-based default campaign/adset IDs instead of requiring them in the request body (avoids UI churn).
 - Plan called for tier badges on draft cards — dropped per design refinement. Internal `tier` metadata drives the Enhance affordance only; no user-facing label.
+- Audit removed the `LINKEDIN_TOKEN` / `FACEBOOK_TOKEN` intermediate env names and the `token_ref` workspace field — onboarding now writes the canonical names that `scripts/*.py` already expect.
