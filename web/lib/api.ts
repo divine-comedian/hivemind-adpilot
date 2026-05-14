@@ -56,8 +56,13 @@ export const api = {
   patchFocus: (focus_notes: string) => j<WorkspaceState>("/workspace", { method: "PATCH", body: JSON.stringify({ focus_notes }) }),
   listDrafts: () => j<Draft[]>("/drafts"),
   getDraft: (id: string) => j<Draft>(`/drafts/${id}`),
-  pushDraft: (id: string, body: { platform: "linkedin" | "facebook"; campaign_id?: string }) =>
-    j(`/drafts/${id}/push`, { method: "POST", body: JSON.stringify(body) }),
+  pushDraft: (
+    id: string,
+    body: { platform: "linkedin" | "facebook"; campaign_id?: string; adset_id?: string },
+  ) => j<{ external_urn: string; external_url: string }>(`/drafts/${id}/push`, {
+    method: "POST",
+    body: JSON.stringify(body),
+  }),
   regenerateDraft: (id: string) => j<Draft>(`/drafts/${id}/regenerate`, { method: "POST" }),
   getAnalytics: (window: string = "30d") => j(`/analytics?window=${window}`),
   acceptDiagnose: (body: unknown) => j("/diagnose/accept", { method: "POST", body: JSON.stringify(body) }),
