@@ -10,3 +10,7 @@ node_modules/
 
 # AdPilot runtime state
 /workspace/
+
+# Generated demo/sample artifacts — too large to track. Existing tracked files stay.
+/drafts/2026-*/
+/samples/
