@@ -1,6 +1,5 @@
 """Pulls and merges LinkedIn + Facebook ad-level perf for the workspace."""
 
-import os
 from datetime import date, timedelta
 from fastapi import APIRouter
 
@@ -23,12 +22,6 @@ def get_analytics(window: str = "30d"):
     start = end - timedelta(days=days)
 
     rows: list[dict] = []
-
-    # Make sure env vars are set so scripts/ pick them up
-    if "LINKEDIN_TOKEN" in os.environ:
-        os.environ.setdefault("LINKEDIN_ACCESS_TOKEN", os.environ["LINKEDIN_TOKEN"])
-    if "FACEBOOK_TOKEN" in os.environ:
-        os.environ.setdefault("FACEBOOK_ACCESS_TOKEN", os.environ["FACEBOOK_TOKEN"])
 
     li_account = state["platforms"]["linkedin"]["account_id"]
     try:

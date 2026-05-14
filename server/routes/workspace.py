@@ -10,6 +10,8 @@ import os
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel
+
 from server.deps import hivemind, workspace_store, poller
 from server.models import OnboardIn
 from server.platforms import linkedin as li
@@ -17,6 +19,10 @@ from server.platforms import facebook as fb
 
 
 router = APIRouter()
+
+
+class FocusPatch(BaseModel):
+    focus_notes: str
 
 
 @router.post("/workspace", status_code=201)
@@ -43,14 +49,18 @@ async def create_workspace(payload: OnboardIn):
     if not project_id:
         raise HTTPException(502, f"Hivemind create_project did not return id: {proj}")
 
-    # 3. Persist tokens to disk (gitignored)
+    # 3. Persist tokens to disk (gitignored) using the canonical env var names that
+    #    scripts/ already expect. Startup lifespan in server/main.py reloads them.
     tokens_path = workspace_store().path.parent / ".tokens.env"
+    tokens_path.parent.mkdir(parents=True, exist_ok=True)
     tokens_path.write_text(
-        f"LINKEDIN_TOKEN={payload.linkedin.access_token}\n"
-        f"FACEBOOK_TOKEN={payload.facebook.access_token}\n"
+        f"LINKEDIN_ACCESS_TOKEN={payload.linkedin.access_token}\n"
+        f"FACEBOOK_ACCESS_TOKEN={payload.facebook.access_token}\n"
+        f"FACEBOOK_PAGE_ID={payload.facebook.page_id}\n"
     )
-    os.environ["LINKEDIN_TOKEN"] = payload.linkedin.access_token
-    os.environ["FACEBOOK_TOKEN"] = payload.facebook.access_token
+    os.environ["LINKEDIN_ACCESS_TOKEN"] = payload.linkedin.access_token
+    os.environ["FACEBOOK_ACCESS_TOKEN"] = payload.facebook.access_token
+    os.environ["FACEBOOK_PAGE_ID"] = payload.facebook.page_id
 
     state = {
         "workspace_id": f"ws_{uuid.uuid4().hex[:8]}",
@@ -70,12 +80,10 @@ async def create_workspace(payload: OnboardIn):
             "linkedin": {
                 "account_id": payload.linkedin.account_id,
                 "org_urn": payload.linkedin.org_urn,
-                "token_ref": "LINKEDIN_TOKEN",
             },
             "facebook": {
                 "account_id": payload.facebook.account_id,
                 "page_id": payload.facebook.page_id,
-                "token_ref": "FACEBOOK_TOKEN",
             },
         },
         "created_at": datetime.now(timezone.utc).isoformat(),
@@ -93,13 +101,6 @@ async def create_workspace(payload: OnboardIn):
 @router.get("/workspace/me")
 def get_workspace():
     return workspace_store().load()
-
-
-from pydantic import BaseModel as _PydBaseModel
-
-
-class FocusPatch(_PydBaseModel):
-    focus_notes: str
 
 
 @router.patch("/workspace")

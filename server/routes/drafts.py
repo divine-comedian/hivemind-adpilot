@@ -56,13 +56,6 @@ def push_draft(draft_id: str, body: PushIn):
     li = state["platforms"]["linkedin"]
     fb = state["platforms"]["facebook"]
 
-    # Make sure token env vars are loaded so scripts/ can pick them up
-    if "LINKEDIN_TOKEN" in os.environ:
-        os.environ.setdefault("LINKEDIN_ACCESS_TOKEN", os.environ["LINKEDIN_TOKEN"])
-    if "FACEBOOK_TOKEN" in os.environ:
-        os.environ.setdefault("FACEBOOK_ACCESS_TOKEN", os.environ["FACEBOOK_TOKEN"])
-    os.environ.setdefault("FACEBOOK_PAGE_ID", fb["page_id"])
-
     click_url = state["business"]["website"]
 
     # Hackathon fallback: pull default ad container from env if client didn't supply

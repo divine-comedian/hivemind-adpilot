@@ -2,7 +2,6 @@
 
 import asyncio
 import json
-import os
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
@@ -131,12 +130,6 @@ def accept(body: AcceptIn):
     state = workspace_store().load()
     if not state:
         raise HTTPException(404, "no workspace")
-
-    # Ensure script env vars are set
-    if "LINKEDIN_TOKEN" in os.environ:
-        os.environ.setdefault("LINKEDIN_ACCESS_TOKEN", os.environ["LINKEDIN_TOKEN"])
-    if "FACEBOOK_TOKEN" in os.environ:
-        os.environ.setdefault("FACEBOOK_ACCESS_TOKEN", os.environ["FACEBOOK_TOKEN"])
 
     if body.action == "kill":
         if not body.platform:
