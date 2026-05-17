@@ -12,13 +12,15 @@ export function GeneratePanel({ onComplete }: { onComplete: (drafts: Draft[]) =>
   const [focus, setFocus] = useState("");
   const [steps, setSteps] = useState<ChainStep[]>([]);
   const [running, setRunning] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const submit = () => {
-    setRunning(true); setSteps([]);
+    setRunning(true); setError(null); setSteps([]);
     streamGenerate(
       { platforms, count, focus_note: focus },
       (step) => setSteps((s) => [...s.filter((x) => x.step !== step.step), step]),
       (result) => { setRunning(false); onComplete(result.drafts); setOpen(false); },
+      (message) => { setRunning(false); setError(message); },
     );
   };
 
@@ -49,6 +51,7 @@ export function GeneratePanel({ onComplete }: { onComplete: (drafts: Draft[]) =>
                 <span className="text-sm font-medium">Focus (optional)</span>
                 <Textarea value={focus} onChange={(e) => setFocus(e.target.value)} placeholder="e.g. enterprise buyers, competitor X just launched feature Y" />
               </label>
+              {error && <p className="text-sm text-[var(--color-negative)]">{error}</p>}
               {steps.length > 0 && <ChainTrace steps={steps} />}
               <Button onClick={submit} disabled={running} className="w-full" size="lg">
                 {running ? "Running Strategist Chain…" : "Run"}

@@ -21,6 +21,8 @@ async def diagnose_stream(request: Request):
     state = workspace_store().load()
     if not state:
         raise HTTPException(404, "no workspace")
+    tier = "B" if state.get("hivemind", {}).get("enrichment_status") == "ready" else "A"
+    voice_notes = state["business"].get("voice_notes", "")
     perf = get_analytics(window="30d")
     rows = [r for r in perf["rows"] if not r.get("error")]
     chain = DiagnoseChain(hivemind=hivemind())
@@ -36,9 +38,11 @@ async def diagnose_stream(request: Request):
                 None,
                 lambda: chain.diagnose(
                     project_id=state["hivemind"]["project_id"],
+                    tier=tier,
                     performance_data=rows,
                     active_creative_copy=[],
                     platforms=["linkedin", "facebook"],
+                    voice_notes=voice_notes,
                     on_step=on_step,
                 ),
             )
@@ -135,9 +139,11 @@ def accept(body: AcceptIn):
         if not body.platform:
             raise HTTPException(400, "platform required for kill action")
         if body.platform == "linkedin":
+            li = state.get("platforms", {}).get("linkedin")
+            if not li:
+                raise HTTPException(412, "LinkedIn credentials not connected")
             from scripts.li_campaign import update_creative_status
-            li_account = state["platforms"]["linkedin"]["account_id"]
-            update_creative_status(account_id=li_account, creative_id=body.target_id, status="PAUSED")
+            update_creative_status(account_id=li["account_id"], creative_id=body.target_id, status="PAUSED")
         elif body.platform == "facebook":
             from scripts.fb_campaign import update_ad_status
             update_ad_status(ad_id=body.target_id, status="PAUSED")

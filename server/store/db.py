@@ -73,6 +73,14 @@ class DraftsDB:
 
     # ---- drafts ----
 
+    def _draft_from_row(self, row: sqlite3.Row) -> dict[str, Any]:
+        d = dict(row)
+        d["strategist_trace"] = json.loads(d["strategist_trace"] or "{}")
+        d["published_at"] = d.pop("pushed_at", None)
+        d["external_urn"] = d.get("external_urn")
+        d["external_url"] = d.get("external_url")
+        return d
+
     def insert_draft(self, d: dict[str, Any]) -> None:
         with self._lock, self._conn() as c:
             c.execute(
@@ -93,25 +101,32 @@ class DraftsDB:
 
     def get_draft(self, draft_id: str) -> dict[str, Any] | None:
         with self._conn() as c:
-            row = c.execute("SELECT * FROM drafts WHERE id = ?", (draft_id,)).fetchone()
+            row = c.execute(
+                """SELECT drafts.*, pushes.pushed_at, pushes.external_urn, pushes.external_url
+                FROM drafts
+                LEFT JOIN pushes ON pushes.id = (
+                  SELECT id FROM pushes WHERE draft_id = drafts.id ORDER BY pushed_at DESC LIMIT 1
+                )
+                WHERE drafts.id = ?""",
+                (draft_id,),
+            ).fetchone()
         if not row:
             return None
-        d = dict(row)
-        d["strategist_trace"] = json.loads(d["strategist_trace"] or "{}")
-        return d
+        return self._draft_from_row(row)
 
     def list_drafts(self, workspace_id: str) -> list[dict[str, Any]]:
         with self._conn() as c:
             rows = c.execute(
-                "SELECT * FROM drafts WHERE workspace_id = ? ORDER BY created_at DESC",
+                """SELECT drafts.*, pushes.pushed_at, pushes.external_urn, pushes.external_url
+                FROM drafts
+                LEFT JOIN pushes ON pushes.id = (
+                  SELECT id FROM pushes WHERE draft_id = drafts.id ORDER BY pushed_at DESC LIMIT 1
+                )
+                WHERE workspace_id = ?
+                ORDER BY created_at DESC""",
                 (workspace_id,),
             ).fetchall()
-        out = []
-        for row in rows:
-            d = dict(row)
-            d["strategist_trace"] = json.loads(d["strategist_trace"] or "{}")
-            out.append(d)
-        return out
+        return [self._draft_from_row(row) for row in rows]
 
     def update_draft_copy(self, draft_id: str, headline: str, body: str, cta: str) -> None:
         with self._lock, self._conn() as c:
@@ -132,6 +147,10 @@ class DraftsDB:
     def mark_superseded(self, draft_id: str) -> None:
         with self._lock, self._conn() as c:
             c.execute("UPDATE drafts SET status='superseded' WHERE id=?", (draft_id,))
+
+    def mark_discarded(self, draft_id: str) -> None:
+        with self._lock, self._conn() as c:
+            c.execute("UPDATE drafts SET status='discarded' WHERE id=?", (draft_id,))
 
     # ---- diagnoses ----
 

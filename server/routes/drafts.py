@@ -25,6 +25,22 @@ class PushIn(BaseModel):
     adset_id: str | None = None  # facebook needs this
 
 
+class RefineIn(BaseModel):
+    guidance: str
+
+
+def _business_from_state(state: dict) -> dict:
+    project = state.get("project", {})
+    return {
+        "website_url": state["hivemind"]["website_url"],
+        "project_name": project.get("project_name", ""),
+        "description": project.get("description", ""),
+        "geographics": project.get("geographics", []),
+        "voice_notes": state.get("business", {}).get("voice_notes", ""),
+        "focus_notes": state.get("business", {}).get("focus_notes", ""),
+    }
+
+
 @router.get("/drafts")
 def list_drafts():
     state = workspace_store().load()
@@ -47,22 +63,32 @@ def patch_draft(draft_id: str, body: DraftPatch):
     return drafts_db().get_draft(draft_id)
 
 
+@router.delete("/drafts/{draft_id}")
+def delete_draft(draft_id: str):
+    d = drafts_db().get_draft(draft_id)
+    if not d:
+        raise HTTPException(404)
+    drafts_db().mark_discarded(draft_id)
+    return {"ok": True}
+
+
 @router.post("/drafts/{draft_id}/push")
 def push_draft(draft_id: str, body: PushIn):
     d = drafts_db().get_draft(draft_id)
     if not d:
         raise HTTPException(404)
     state = workspace_store().load()
-    li = state["platforms"]["linkedin"]
-    fb = state["platforms"]["facebook"]
-
-    click_url = state["business"]["website"]
+    platforms_state = state.get("platforms", {})
+    click_url = state["hivemind"]["website_url"]
 
     # Hackathon fallback: pull default ad container from env if client didn't supply
     campaign_id = body.campaign_id or os.environ.get("LI_DEFAULT_CAMPAIGN_ID", "")
     adset_id = body.adset_id or os.environ.get("FB_DEFAULT_ADSET_ID", "")
 
     if body.platform == "linkedin":
+        li = platforms_state.get("linkedin")
+        if not li:
+            raise HTTPException(412, "LinkedIn credentials not connected — PATCH /workspace/credentials first")
         if not campaign_id:
             raise HTTPException(400, "campaign_id required for LinkedIn push (or set LI_DEFAULT_CAMPAIGN_ID env)")
         from scripts.li_campaign import create_ad as li_create_ad
@@ -79,6 +105,9 @@ def push_draft(draft_id: str, body: PushIn):
         urn = result["creative_id"]
         url = f"https://www.linkedin.com/campaignmanager/accounts/{li['account_id']}/creatives/"
     elif body.platform == "facebook":
+        fb = platforms_state.get("facebook")
+        if not fb:
+            raise HTTPException(412, "Facebook credentials not connected — PATCH /workspace/credentials first")
         if not adset_id:
             raise HTTPException(400, "adset_id required for Facebook push (or set FB_DEFAULT_ADSET_ID env)")
         from scripts.fb_campaign import upload_image as fb_upload, create_ad_creative, create_ad as fb_create_ad
@@ -113,10 +142,17 @@ def regenerate_draft(draft_id: str):
     if not parent:
         raise HTTPException(404)
     state = workspace_store().load()
+    tier = "B" if state.get("hivemind", {}).get("enrichment_status") == "ready" else "A"
+    business = {
+        "website_url": state["hivemind"]["website_url"],
+        "voice_notes": state["business"].get("voice_notes", ""),
+        "focus_notes": state["business"].get("focus_notes", ""),
+    }
     chain = StrategistChain(hivemind=hivemind())
     result = chain.generate(
         project_id=state["hivemind"]["project_id"],
-        business=state["business"],
+        tier=tier,
+        business=business,
         current_active_ads=[],
         platforms=[parent["platform"]],
         count=1,
@@ -155,3 +191,62 @@ def regenerate_draft(draft_id: str):
     drafts_db().insert_draft(row)
     drafts_db().mark_superseded(draft_id)
     return row
+
+
+@router.post("/drafts/{draft_id}/refine")
+def refine_draft(draft_id: str, body: RefineIn):
+    guidance = body.guidance.strip()
+    if not guidance:
+        raise HTTPException(400, "guidance is required")
+
+    parent = drafts_db().get_draft(draft_id)
+    if not parent:
+        raise HTTPException(404)
+    if parent["status"] == "pushed":
+        raise HTTPException(409, "Published ads cannot be refined")
+
+    state = workspace_store().load()
+    if not state:
+        raise HTTPException(404, "No workspace — onboard first")
+
+    tier = "B" if state.get("hivemind", {}).get("enrichment_status") == "ready" else "A"
+    chain = StrategistChain(hivemind=hivemind())
+    result = chain.refine_draft_copy(
+        project_id=state["hivemind"]["project_id"],
+        tier=tier,
+        business=_business_from_state(state),
+        draft=parent,
+        guidance=guidance,
+    )
+    d = result["draft"]
+
+    new_id = f"d_{uuid.uuid4().hex[:8]}"
+    from scripts import generate_image as gi
+    image_path = WORKSPACE_DIR / "drafts" / f"{new_id}.png"
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        gi.generate_image(style_id=1, headline=d["headline"], logo_type="mark", output_path=str(image_path), ad_format="feed")
+        img = str(image_path)
+    except (Exception, SystemExit):
+        img = ""
+
+    row = {
+        "id": new_id,
+        "workspace_id": state["workspace_id"],
+        "platform": parent["platform"],
+        "headline": d["headline"],
+        "body": d["body"],
+        "cta": d["cta"],
+        "image_path": img,
+        "rationale": d.get("rationale", ""),
+        "strategist_trace": result["strategist_output"],
+        "source": "refine",
+        "source_angle_id": d.get("angle_id"),
+        "tier": result["tier"],
+        "parent_draft_id": draft_id,
+        "status": "draft",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    drafts_db().insert_draft(row)
+    drafts_db().mark_superseded(draft_id)
+    return drafts_db().get_draft(new_id)

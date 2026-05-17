@@ -43,4 +43,19 @@ def test_mark_pushed(db):
         "source_angle_id": "a", "tier": "A", "parent_draft_id": None, "status": "draft",
     })
     db.mark_pushed("d-1", external_urn="urn:li:sponsoredCreative:1", external_url="https://...")
-    assert db.get_draft("d-1")["status"] == "pushed"
+    fetched = db.get_draft("d-1")
+    assert fetched["status"] == "pushed"
+    assert fetched["published_at"]
+    assert fetched["external_urn"] == "urn:li:sponsoredCreative:1"
+    assert fetched["external_url"] == "https://..."
+
+
+def test_mark_discarded(db):
+    db.insert_draft({
+        "id": "d-1", "workspace_id": "ws_1", "platform": "linkedin",
+        "headline": "H", "body": "b", "cta": "LEARN_MORE", "image_path": "",
+        "rationale": "", "strategist_trace": {}, "source": "generate",
+        "source_angle_id": "a", "tier": "A", "parent_draft_id": None, "status": "draft",
+    })
+    db.mark_discarded("d-1")
+    assert db.get_draft("d-1")["status"] == "discarded"

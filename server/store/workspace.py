@@ -24,10 +24,26 @@ class WorkspaceStore:
             return None
         return json.loads(self.path.read_text())
 
-    def update_report_status(self, report_type: str, status_dict: dict[str, Any]) -> None:
+    def update_enrichment_status(self, project_id: str, status: str) -> None:
         with self._lock:
             data = self.load() or {}
-            data.setdefault("hivemind", {}).setdefault("reports", {})[report_type] = status_dict
+            hivemind = data.setdefault("hivemind", {})
+            hivemind["project_id"] = project_id
+            hivemind["enrichment_status"] = status
+            tmp = self.path.with_suffix(".tmp")
+            tmp.write_text(json.dumps(data, indent=2, default=str))
+            tmp.replace(self.path)
+
+    def update_project_info(self, project_id: str, info: dict[str, Any]) -> None:
+        with self._lock:
+            data = self.load() or {}
+            if data.get("hivemind", {}).get("project_id") != project_id:
+                return
+            project = data.setdefault("project", {})
+            for key in ("project_name", "description", "geographics"):
+                value = info.get(key)
+                if value is not None:
+                    project[key] = value
             tmp = self.path.with_suffix(".tmp")
             tmp.write_text(json.dumps(data, indent=2, default=str))
             tmp.replace(self.path)

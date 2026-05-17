@@ -6,7 +6,9 @@ export default function WorkspaceLayout({ children }: { children: React.ReactNod
       <aside className="w-56 border-r border-[var(--color-hairline)] px-6 py-8 sticky top-0 h-screen">
         <p className="font-mono text-xs uppercase tracking-widest text-[var(--color-ink-muted)] mb-8">AdPilot</p>
         <nav className="space-y-2 text-sm">
+          <Link href="/workspace/project" className="block hover:text-[var(--color-accent)]">Project Info</Link>
           <Link href="/workspace/drafts" className="block hover:text-[var(--color-accent)]">Drafts</Link>
+          <Link href="/workspace/ads" className="block hover:text-[var(--color-accent)]">Ads</Link>
           <Link href="/workspace/analytics" className="block hover:text-[var(--color-accent)]">Analytics</Link>
           <Link href="/workspace/diagnose" className="block hover:text-[var(--color-accent)]">Diagnose</Link>
         </nav>

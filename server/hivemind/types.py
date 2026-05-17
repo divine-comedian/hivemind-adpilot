@@ -9,11 +9,7 @@ Platform = Literal["linkedin", "facebook"]
 
 
 class BusinessContext(TypedDict):
-    name: str
-    description: str
-    audiences: list[str]
-    geographies: list[str]
-    stage: str
+    website_url: str
     voice_notes: str
     focus_notes: str
 

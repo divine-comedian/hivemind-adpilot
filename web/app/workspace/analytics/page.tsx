@@ -1,6 +1,7 @@
 "use client";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { MetricCard } from "@/components/MetricCard";
 import { AdsTable } from "@/components/AdsTable";
 import { Button } from "@/components/ui/Button";
@@ -32,7 +33,10 @@ interface AnalyticsResponse {
   };
 }
 
-export default function AnalyticsPage() {
+function AnalyticsPageInner() {
+  const searchParams = useSearchParams();
+  const selectedAd = searchParams.get("ad");
+  const selectedPlatform = searchParams.get("platform");
   const [data, setData] = useState<AnalyticsResponse | null>(null);
 
   useEffect(() => {
@@ -44,6 +48,13 @@ export default function AnalyticsPage() {
   const s = data.summary;
   const errors = data.rows.filter((r) => r.error);
   const valid = data.rows.filter((r) => !r.error);
+  const visibleRows = selectedAd
+    ? valid.filter((r) => {
+        const platformMatches = !selectedPlatform || r.platform === selectedPlatform;
+        const adMatches = r.ad_id === selectedAd || r.ad_name === selectedAd;
+        return platformMatches && adMatches;
+      })
+    : valid;
 
   return (
     <>
@@ -68,9 +79,21 @@ export default function AnalyticsPage() {
         </div>
       )}
 
+      {selectedAd && (
+        <div className="mb-6 p-4 bg-[var(--color-accent-soft)] border border-[var(--color-accent)]/30 rounded-sm flex items-center justify-between gap-4">
+          <p className="text-sm">
+            Showing analytics for <span className="font-mono">{selectedAd}</span>
+            {selectedPlatform ? ` on ${selectedPlatform}` : ""}.
+          </p>
+          <Link href="/workspace/analytics" className="text-sm font-medium hover:text-[var(--color-accent)]">
+            Show all ads
+          </Link>
+        </div>
+      )}
+
       <section className="mb-10">
         <h2 className="font-display text-2xl mb-4">Per-ad performance</h2>
-        <AdsTable rows={valid as never} />
+        <AdsTable rows={visibleRows as never} />
       </section>
 
       <div className="flex justify-end">
@@ -79,5 +102,13 @@ export default function AnalyticsPage() {
         </Link>
       </div>
     </>
+  );
+}
+
+export default function AnalyticsPage() {
+  return (
+    <Suspense fallback={<p>Loading...</p>}>
+      <AnalyticsPageInner />
+    </Suspense>
   );
 }

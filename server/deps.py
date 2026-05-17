@@ -3,7 +3,7 @@
 import os
 from pathlib import Path
 from server.hivemind.client import HivemindClient
-from server.hivemind.poller import IntelligencePoller
+from server.hivemind.poller import EnrichmentPoller
 from server.store.workspace import WorkspaceStore
 from server.store.db import DraftsDB
 
@@ -16,7 +16,7 @@ WORKSPACE_DIR.mkdir(exist_ok=True)
 _hm: HivemindClient | None = None
 _ws: WorkspaceStore | None = None
 _db: DraftsDB | None = None
-_poller: IntelligencePoller | None = None
+_poller: EnrichmentPoller | None = None
 
 
 def hivemind() -> HivemindClient:
@@ -24,7 +24,6 @@ def hivemind() -> HivemindClient:
     if _hm is None:
         _hm = HivemindClient(
             api_key=os.environ["HIVEMIND_API_KEY"],
-            intel_key=os.environ.get("HIVEMIND_INTELLIGENCE_API_KEY", os.environ["HIVEMIND_API_KEY"]),
             base_url=os.environ.get("HIVEMIND_BASE_URL", "https://hivemind.myosin.xyz"),
         )
     return _hm
@@ -44,8 +43,8 @@ def drafts_db() -> DraftsDB:
     return _db
 
 
-def poller() -> IntelligencePoller:
+def poller() -> EnrichmentPoller:
     global _poller
     if _poller is None:
-        _poller = IntelligencePoller(hivemind=hivemind(), store=workspace_store())
+        _poller = EnrichmentPoller(hivemind=hivemind(), store=workspace_store())
     return _poller

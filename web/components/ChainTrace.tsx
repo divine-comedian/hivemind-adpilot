@@ -3,10 +3,8 @@ import { Check, Loader2 } from "lucide-react";
 import { ChainStep } from "@/lib/api";
 
 const STEPS = [
-  { id: "intelligence_pull", label: "Intelligence pull" },
-  { id: "knowledge_search", label: "Knowledge layer search" },
-  { id: "strategist_diagnosis", label: "Strategist gap analysis" },
-  { id: "ghostwriter_drafts", label: "Ghostwriter drafts" },
+  { id: "strategist", label: "Strategist (genius-strategist)" },
+  { id: "ghostwriter", label: "Ghostwriter" },
 ];
 
 export function ChainTrace({ steps }: { steps: ChainStep[] }) {

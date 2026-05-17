@@ -6,12 +6,24 @@ import { Button } from "@/components/ui/Button";
 import { Draft, api } from "@/lib/api";
 import { useState } from "react";
 
-export function DraftCard({ draft, intelligenceReady, onChange }: { draft: Draft; intelligenceReady: boolean; onChange: () => void }) {
+interface Props {
+  draft: Draft;
+  enrichmentReady: boolean;
+  credentialsConnected: { linkedin: boolean; facebook: boolean };
+  onRequestCredentials: (platform: "linkedin" | "facebook") => void;
+  onChange: () => void;
+}
+
+export function DraftCard({ draft, enrichmentReady, credentialsConnected, onRequestCredentials, onChange }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
-  const canEnhance = intelligenceReady && draft.tier === "A" && draft.status === "draft";
+  const canEnhance = enrichmentReady && draft.tier === "A" && draft.status === "draft";
   const superseded = draft.status === "superseded";
 
   const push = async (platform: "linkedin" | "facebook") => {
+    if (!credentialsConnected[platform]) {
+      onRequestCredentials(platform);
+      return;
+    }
     setBusy(platform);
     try { await api.pushDraft(draft.id, { platform }); onChange(); } finally { setBusy(null); }
   };
@@ -48,7 +60,11 @@ export function DraftCard({ draft, intelligenceReady, onChange }: { draft: Draft
           <div className="flex gap-2">
             <Button size="sm" onClick={() => push(draft.platform)} disabled={busy !== null} className="flex-1">
               <Send className="w-4 h-4" />
-              {busy === draft.platform ? "Pushing…" : `Push to ${draft.platform}`}
+              {busy === draft.platform
+                ? "Pushing…"
+                : credentialsConnected[draft.platform]
+                  ? `Push to ${draft.platform}`
+                  : `Connect ${draft.platform} to push`}
             </Button>
           </div>
         </div>

@@ -22,27 +22,29 @@ def get_analytics(window: str = "30d"):
     start = end - timedelta(days=days)
 
     rows: list[dict] = []
+    platforms_state = state.get("platforms", {})
 
-    li_account = state["platforms"]["linkedin"]["account_id"]
-    try:
-        # scripts/ may call sys.exit() on failure — catch SystemExit too
-        elements = li_analytics.fetch_analytics(
-            account_id=li_account, pivot="CREATIVE", start_date=start, end_date=end
-        )
-        for r in elements:
-            rows.append(normalize_li_row(r))
-    except (Exception, SystemExit) as exc:
-        rows.append({"platform": "linkedin", "error": f"{type(exc).__name__}: {exc}"})
+    li = platforms_state.get("linkedin")
+    if li:
+        try:
+            elements = li_analytics.fetch_analytics(
+                account_id=li["account_id"], pivot="CREATIVE", start_date=start, end_date=end
+            )
+            for r in elements:
+                rows.append(normalize_li_row(r))
+        except (Exception, SystemExit) as exc:
+            rows.append({"platform": "linkedin", "error": f"{type(exc).__name__}: {exc}"})
 
-    fb_account = state["platforms"]["facebook"]["account_id"]
-    try:
-        data = fb_insights.fetch_insights(
-            account_id=fb_account, level="ad", start_date=start, end_date=end
-        )
-        for r in data:
-            rows.append(normalize_fb_row(r))
-    except (Exception, SystemExit) as exc:
-        rows.append({"platform": "facebook", "error": f"{type(exc).__name__}: {exc}"})
+    fb = platforms_state.get("facebook")
+    if fb:
+        try:
+            data = fb_insights.fetch_insights(
+                account_id=fb["account_id"], level="ad", start_date=start, end_date=end
+            )
+            for r in data:
+                rows.append(normalize_fb_row(r))
+        except (Exception, SystemExit) as exc:
+            rows.append({"platform": "facebook", "error": f"{type(exc).__name__}: {exc}"})
 
     valid = [r for r in rows if "error" not in r]
     summary = {

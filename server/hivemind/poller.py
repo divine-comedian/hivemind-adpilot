@@ -1,7 +1,9 @@
-"""Background poller for intelligence-report jobs.
+"""Background poller for project enrichment status.
 
-Polls each tracked job every 60s. On terminal status, updates workspace state
-and publishes an `intelligence_ready` (or `report_failed`) event.
+Hivemind enriches a project asynchronously after POST /api/v1/projects:
+website scrape → AI extraction → social scrape → intel side-effects → set
+enrichment_status to 'ready' (or 'failed'). We poll GET /api/v1/projects/:id
+every 60s until terminal, then publish an event.
 """
 
 from __future__ import annotations
@@ -13,47 +15,47 @@ from server.hivemind.client import HivemindClient
 from server.store.workspace import WorkspaceStore
 
 
-TERMINAL = {"completed", "completed_partial", "completed_healed", "failed"}
-SUCCESS = {"completed", "completed_partial", "completed_healed"}
+TERMINAL = {"ready", "failed"}
 
 
 log = logging.getLogger(__name__)
 
 
-class IntelligencePoller:
+class EnrichmentPoller:
     def __init__(self, hivemind: HivemindClient, store: WorkspaceStore, interval: float = 60.0):
         self.hm = hivemind
         self.store = store
         self.interval = interval
         self._tasks: dict[str, asyncio.Task] = {}
 
-    def track(self, report_type: str, job_id: str) -> None:
-        if job_id in self._tasks and not self._tasks[job_id].done():
+    def track(self, project_id: str) -> None:
+        if project_id in self._tasks and not self._tasks[project_id].done():
             return
-        self._tasks[job_id] = asyncio.create_task(self._poll_loop(report_type, job_id))
+        self._tasks[project_id] = asyncio.create_task(self._poll_loop(project_id))
 
-    async def _poll_loop(self, report_type: str, job_id: str) -> None:
+    async def _poll_loop(self, project_id: str) -> None:
         while True:
             try:
-                resp = self.hm.intelligence_get_job(job_id)
-                status = resp.get("data", {}).get("status", "queued")
+                resp = self.hm.get_project(project_id)
+                project = resp.get("data", resp)
+                status = project.get("enrichment_status", "enriching")
             except Exception as exc:
-                log.warning("poller error for %s: %s", job_id, exc)
+                log.warning("poller error for %s: %s", project_id, exc)
                 await asyncio.sleep(self.interval)
                 continue
 
-            self.store.update_report_status(report_type, {
-                "job_id": job_id,
-                "status": status,
-                "last_synced_at": resp.get("data", {}).get("completed_at"),
+            self.store.update_enrichment_status(project_id, status)
+            self.store.update_project_info(project_id, {
+                "project_name": project.get("project_name") or project.get("project_title"),
+                "description": project.get("description"),
+                "geographics": project.get("geographics"),
             })
 
             if status in TERMINAL:
-                event_type = "intelligence_ready" if status in SUCCESS else "report_failed"
+                event_type = "enrichment_ready" if status == "ready" else "enrichment_failed"
                 bus.publish({
                     "type": event_type,
-                    "report_type": report_type,
-                    "job_id": job_id,
+                    "project_id": project_id,
                     "status": status,
                 })
                 return

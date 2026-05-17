@@ -4,9 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { ChainTrace } from "@/components/ChainTrace";
-import { ChainStep, api } from "@/lib/api";
-
-const BASE = process.env.NEXT_PUBLIC_API_BASE ?? "http://localhost:8000";
+import { API_BASE, ChainStep, api } from "@/lib/api";
 
 interface DiagnoseResult {
   diagnose_id: string;
@@ -26,7 +24,7 @@ export default function DiagnosePage() {
     setRunning(true);
     setSteps([]);
     setResult(null);
-    const src = new EventSource(`${BASE}/diagnose`);
+    const src = new EventSource(`${API_BASE}/diagnose`);
     src.addEventListener("chain_step", (e) => {
       const s = JSON.parse((e as MessageEvent).data);
       setSteps((arr) => [...arr.filter((x) => x.step !== s.step), s]);

@@ -1,49 +1,51 @@
 "use client";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Chip } from "@/components/ui/Chip";
-import { api, Draft, WorkspaceState, subscribeWorkspaceEvents } from "@/lib/api";
-import { DraftCard } from "@/components/DraftCard";
-import { GeneratePanel } from "@/components/GeneratePanel";
-import { RefinePanel } from "@/components/RefinePanel";
+import { api, WorkspaceState, subscribeWorkspaceEvents } from "@/lib/api";
+import { DraftIdeaGenerator } from "@/components/DraftIdeaGenerator";
 
 export default function DraftsPage() {
+  const router = useRouter();
   const [ws, setWs] = useState<WorkspaceState | null>(null);
-  const [drafts, setDrafts] = useState<Draft[]>([]);
   const [banner, setBanner] = useState<string | null>(null);
+  const [hasGeneratedIdeas, setHasGeneratedIdeas] = useState(false);
 
   const reload = async () => {
     setWs(await api.getWorkspace());
-    setDrafts(await api.listDrafts());
   };
 
   useEffect(() => { reload(); }, []);
 
   useEffect(() => {
+    if (ws?.last_angle_ideas) setHasGeneratedIdeas(true);
+  }, [ws]);
+
+  useEffect(() => {
     const unsub = subscribeWorkspaceEvents((e) => {
-      if (e.type === "intelligence_ready") {
-        setBanner(`Market intelligence is ready — drafts can be enhanced.`);
+      if (e.type === "enrichment_ready") {
+        setBanner("Project enrichment is ready — drafts can be enhanced with market intelligence.");
+        reload();
+      } else if (e.type === "enrichment_failed") {
+        setBanner("Project enrichment failed. Drafts will still run in tier A.");
         reload();
       }
     });
     return unsub;
   }, []);
 
-  const intelligenceReady = !!ws && Object.values(ws.hivemind.reports || {}).some(
-    (r) => ["completed", "completed_partial", "completed_healed"].includes(r.status),
-  );
-
+  const enrichmentReady = ws?.hivemind.enrichment_status === "ready";
   return (
     <>
       <header className="flex items-baseline justify-between mb-10">
         <div>
           <h1 className="font-display text-4xl">Drafts</h1>
-          <p className="text-[var(--color-ink-muted)] mt-1">{ws?.business.name}</p>
+          <p className="text-[var(--color-ink-muted)] mt-1">{ws?.hivemind.website_url}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Chip state={intelligenceReady ? "ready" : "brewing"}>
-            Market intelligence: {intelligenceReady ? "ready" : "brewing"}
+          <Chip state={enrichmentReady ? "ready" : "brewing"}>
+            Project: {ws?.hivemind.enrichment_status ?? "enriching"}
           </Chip>
-          <GeneratePanel onComplete={reload} />
         </div>
       </header>
 
@@ -54,14 +56,20 @@ export default function DraftsPage() {
         </div>
       )}
 
-      {ws && <RefinePanel initial={ws.business.focus_notes} onSave={(v) => api.patchFocus(v).catch(() => {})} />}
+      {ws && (
+        <DraftIdeaGenerator
+          initialIdeas={ws.last_angle_ideas}
+          onComplete={() => router.push("/workspace/ads")}
+          onIdeasChange={(ideas) => {
+            setHasGeneratedIdeas(true);
+            setWs((curr) => curr ? { ...curr, last_angle_ideas: ideas } : curr);
+          }}
+        />
+      )}
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-6">
-        {drafts.map((d) => <DraftCard key={d.id} draft={d} intelligenceReady={intelligenceReady} onChange={reload} />)}
-        {drafts.length === 0 && (
-          <p className="text-[var(--color-ink-muted)] col-span-full">No drafts yet. Click <strong>Generate drafts</strong> to start.</p>
-        )}
-      </div>
+      {!hasGeneratedIdeas && (
+        <p className="text-[var(--color-ink-muted)]">No draft ideas yet. Click <strong>Give me some Ideas</strong> to start.</p>
+      )}
     </>
   );
 }
