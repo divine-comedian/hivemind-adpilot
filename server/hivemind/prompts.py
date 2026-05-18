@@ -34,6 +34,7 @@ def _compact_business(business: dict[str, Any]) -> dict[str, Any]:
         "project_name": _clip_text(business.get("project_name", ""), 140),
         "description": _clip_text(business.get("description", ""), 1200),
         "geographics": _clip_list(business.get("geographics"), items=5, item_limit=80),
+        "audiences": _clip_list(business.get("audiences"), items=10, item_limit=140),
         "voice_notes": _clip_text(business.get("voice_notes", ""), 500),
         "focus_notes": _clip_text(business.get("focus_notes", ""), 500),
     }

@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -12,6 +12,7 @@ interface DiagnoseResult {
   kill_recommendations: { target_id: string; platform: string; reasoning: string; framework_cited: string | null }[];
   replacement_drafts: { draft_id: string; headline: string; body: string; rationale: string }[];
   tier: "A" | "B";
+  created_at?: string;
 }
 
 export default function DiagnosePage() {
@@ -19,6 +20,12 @@ export default function DiagnosePage() {
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<DiagnoseResult | null>(null);
   const [killed, setKilled] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    api.getLatestDiagnosis().then((latest) => {
+      if (latest) setResult(latest);
+    }).catch(() => {});
+  }, []);
 
   const run = () => {
     setRunning(true);

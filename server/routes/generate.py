@@ -7,11 +7,14 @@ the EventSource URL.
 
 import asyncio
 import json
+import logging
 import threading
 import uuid
 from datetime import datetime, timedelta, timezone
 from fastapi import APIRouter, Request, HTTPException
 from sse_starlette.sse import EventSourceResponse
+
+log = logging.getLogger(__name__)
 
 from server.deps import hivemind, workspace_store, drafts_db, WORKSPACE_DIR
 from server.hivemind.strategist_chain import StrategistChain
@@ -67,6 +70,7 @@ def _business_from_state(state: dict) -> dict:
         "project_name": project.get("project_name", ""),
         "description": project.get("description", ""),
         "geographics": project.get("geographics", []),
+        "audiences": project.get("audiences", []),
         "voice_notes": state.get("business", {}).get("voice_notes", ""),
         "focus_notes": state.get("business", {}).get("focus_notes", ""),
     }
@@ -242,6 +246,7 @@ async def generate_stream(job_id: str, request: Request):
                     )
                     img_path_str = str(image_path)
                 except (Exception, SystemExit):
+                    log.exception("image generation failed for draft %s", draft_id)
                     img_path_str = ""
 
                 row = {

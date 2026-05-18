@@ -17,7 +17,7 @@ interface Props {
 export function CredentialsPanel({ platform, onClose, onSaved }: Props) {
   const [accessToken, setAccessToken] = useState("");
   const [accountId, setAccountId] = useState("");
-  const [orgUrn, setOrgUrn] = useState("");
+  const [organizationId, setOrganizationId] = useState("");
   const [pageId, setPageId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -29,7 +29,7 @@ export function CredentialsPanel({ platform, onClose, onSaved }: Props) {
     try {
       const body =
         platform === "linkedin"
-          ? { linkedin: { access_token: accessToken, account_id: accountId, org_urn: orgUrn } }
+          ? { linkedin: { access_token: accessToken, account_id: accountId, organization_id: organizationId } }
           : { facebook: { access_token: accessToken, account_id: accountId, page_id: pageId } };
       const ws = await api.patchCredentials(body);
       onSaved(ws);
@@ -91,15 +91,15 @@ export function CredentialsPanel({ platform, onClose, onSaved }: Props) {
 
           {platform === "linkedin" ? (
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Organization URN</label>
+              <label className="text-sm font-medium">Organization ID</label>
               <p className="text-xs text-[var(--color-ink-muted)]">
-                Identifies the LinkedIn Company Page that owns uploaded ad images and sponsored posts.
+                The numeric ID of the LinkedIn Company Page that owns uploaded ad images and sponsored posts. Find it on your Page admin view under Page info.
               </p>
               <Input
-                value={orgUrn}
-                onChange={(e) => setOrgUrn(e.target.value)}
-                placeholder="urn:li:organization:112708829"
-                pattern="^urn:li:organization:\d+$"
+                value={organizationId}
+                onChange={(e) => setOrganizationId(e.target.value)}
+                placeholder="112708829"
+                pattern="^(?:\d+|urn:li:organization:\d+)$"
                 required
               />
             </div>

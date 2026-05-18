@@ -26,6 +26,11 @@ def demo_workspace() -> dict[str, Any]:
                 "fast clarity before spending more on marketing."
             ),
             "geographics": ["Canada", "United States"],
+            "audiences": [
+                "Owner-operators of local service businesses",
+                "Founders allocating their first paid-media budget",
+                "Fractional CMOs handling early-stage growth",
+            ],
         },
         "business": {
             "voice_notes": "Confident, practical, and specific. Avoid hype and fear-based framing.",

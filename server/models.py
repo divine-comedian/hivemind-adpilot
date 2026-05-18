@@ -1,9 +1,9 @@
 """Pydantic v2 models for workspace input/output."""
 
 from __future__ import annotations
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, Field, HttpUrl
+from pydantic import BaseModel, Field, HttpUrl, StringConstraints, field_validator
 
 
 class OnboardIn(BaseModel):
@@ -13,7 +13,17 @@ class OnboardIn(BaseModel):
 class LinkedInCredentialsIn(BaseModel):
     access_token: str = Field(min_length=10)
     account_id: str
-    org_urn: str = Field(pattern=r"^urn:li:organization:\d+$")
+    organization_id: str
+
+    @field_validator("organization_id", mode="before")
+    @classmethod
+    def _normalize_org_id(cls, v: object) -> str:
+        s = str(v or "").strip()
+        if s.startswith("urn:li:organization:"):
+            s = s.split(":")[-1]
+        if not s.isdigit():
+            raise ValueError("organization_id must be numeric (e.g. 112708829) or a urn:li:organization:N URN")
+        return s
 
 
 class FacebookCredentialsIn(BaseModel):
@@ -32,10 +42,14 @@ class VoicePatch(BaseModel):
     focus_notes: str = ""
 
 
+AudienceStr = Annotated[str, StringConstraints(min_length=1, max_length=25)]
+
+
 class ProjectInfoPatch(BaseModel):
     project_name: str = Field(min_length=1)
     description: str = ""
     geographics: list[str] = Field(default_factory=list, max_length=5)
+    audiences: list[AudienceStr] = Field(default_factory=list, max_length=10)
 
 
 class DraftIdeaRefineIn(BaseModel):

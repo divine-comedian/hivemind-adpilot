@@ -40,7 +40,7 @@ class WorkspaceStore:
             if data.get("hivemind", {}).get("project_id") != project_id:
                 return
             project = data.setdefault("project", {})
-            for key in ("project_name", "description", "geographics"):
+            for key in ("project_name", "description", "geographics", "audiences"):
                 value = info.get(key)
                 if value is not None:
                     project[key] = value

@@ -49,6 +49,7 @@ class EnrichmentPoller:
                 "project_name": project.get("project_name") or project.get("project_title"),
                 "description": project.get("description"),
                 "geographics": project.get("geographics"),
+                "audiences": project.get("audiences"),
             })
 
             if status in TERMINAL:

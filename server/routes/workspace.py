@@ -37,6 +37,7 @@ def _project_info(data: dict, website_url: str) -> dict:
         "project_name": data.get("project_name") or data.get("project_title") or website_url,
         "description": data.get("description") or "",
         "geographics": data.get("geographics") or [],
+        "audiences": data.get("audiences") or [],
     }
 
 
@@ -97,6 +98,7 @@ def patch_project(body: ProjectInfoPatch):
             project_name=body.project_name,
             description=body.description,
             geographics=body.geographics,
+            audiences=body.audiences,
         )
         data = _project_data(resp)
     except Exception as exc:
@@ -106,6 +108,7 @@ def patch_project(body: ProjectInfoPatch):
         "project_name": data.get("project_name") or body.project_name,
         "description": data.get("description") if data.get("description") is not None else body.description,
         "geographics": data.get("geographics") if data.get("geographics") is not None else body.geographics,
+        "audiences": data.get("audiences") if data.get("audiences") is not None else body.audiences,
     }
     workspace_store().save(state)
     return state
@@ -147,7 +150,7 @@ def patch_credentials(payload: CredentialsIn):
             raise HTTPException(400, f"LinkedIn token invalid: {msg}")
         platforms["linkedin"] = {
             "account_id": payload.linkedin.account_id,
-            "org_urn": payload.linkedin.org_urn,
+            "organization_id": payload.linkedin.organization_id,
         }
         os.environ["LINKEDIN_ACCESS_TOKEN"] = payload.linkedin.access_token
         token_lines.append(f"LINKEDIN_ACCESS_TOKEN={payload.linkedin.access_token}")

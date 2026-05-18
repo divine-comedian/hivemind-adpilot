@@ -1,10 +1,14 @@
 """Drafts list / get / patch / push / regenerate."""
 
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
+from pathlib import Path
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
+
+log = logging.getLogger(__name__)
 
 from server.deps import hivemind, workspace_store, drafts_db, WORKSPACE_DIR
 from server.demo import demo_mode, ensure_demo_data
@@ -37,6 +41,7 @@ def _business_from_state(state: dict) -> dict:
         "project_name": project.get("project_name", ""),
         "description": project.get("description", ""),
         "geographics": project.get("geographics", []),
+        "audiences": project.get("audiences", []),
         "voice_notes": state.get("business", {}).get("voice_notes", ""),
         "focus_notes": state.get("business", {}).get("focus_notes", ""),
     }
@@ -85,6 +90,10 @@ def push_draft(draft_id: str, body: PushIn):
         drafts_db().mark_pushed(draft_id, external_urn=urn, external_url=url)
         return {"external_urn": urn, "external_url": url}
 
+    img_path = d.get("image_path") or ""
+    if not img_path or not Path(img_path).is_file():
+        raise HTTPException(422, "Draft has no image — regenerate the draft before publishing")
+
     state = workspace_store().load()
     platforms_state = state.get("platforms", {})
     click_url = state["hivemind"]["website_url"]
@@ -109,7 +118,7 @@ def push_draft(draft_id: str, body: PushIn):
             cta=d["cta"],
             destination_url=click_url,
             status="PAUSED",
-            org_urn=li["org_urn"],
+            org_urn=f"urn:li:organization:{li['organization_id']}" if li.get("organization_id") else li.get("org_urn", ""),
         )
         urn = result["creative_id"]
         url = f"https://www.linkedin.com/campaignmanager/accounts/{li['account_id']}/creatives/"
@@ -178,6 +187,7 @@ def regenerate_draft(draft_id: str):
         gi.generate_image(style_id=1, headline=d["headline"], logo_type="mark", output_path=str(image_path), ad_format="feed")
         img = str(image_path)
     except (Exception, SystemExit):
+        log.exception("image generation failed for draft %s", new_id)
         img = ""
 
     row = {
@@ -237,6 +247,7 @@ def refine_draft(draft_id: str, body: RefineIn):
         gi.generate_image(style_id=1, headline=d["headline"], logo_type="mark", output_path=str(image_path), ad_format="feed")
         img = str(image_path)
     except (Exception, SystemExit):
+        log.exception("image generation failed for draft %s", new_id)
         img = ""
 
     row = {
@@ -259,3 +270,30 @@ def refine_draft(draft_id: str, body: RefineIn):
     drafts_db().insert_draft(row)
     drafts_db().mark_superseded(draft_id)
     return drafts_db().get_draft(new_id)
+
+
+@router.post("/drafts/{draft_id}/regenerate-image")
+def regenerate_draft_image(draft_id: str):
+    d = drafts_db().get_draft(draft_id)
+    if not d:
+        raise HTTPException(404)
+    if d["status"] == "pushed":
+        raise HTTPException(409, "Published drafts cannot have their image regenerated")
+
+    from scripts import generate_image as gi
+    image_path = WORKSPACE_DIR / "drafts" / f"{draft_id}.png"
+    image_path.parent.mkdir(parents=True, exist_ok=True)
+    try:
+        gi.generate_image(
+            style_id=1,
+            headline=d["headline"],
+            logo_type="mark",
+            output_path=str(image_path),
+            ad_format="feed",
+        )
+    except (Exception, SystemExit) as e:
+        log.exception("image regeneration failed for draft %s", draft_id)
+        raise HTTPException(502, f"Image generation failed: {e}")
+
+    drafts_db().update_draft_image(draft_id, str(image_path))
+    return drafts_db().get_draft(draft_id)

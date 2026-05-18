@@ -13,6 +13,7 @@ function fallbackProject(ws: WorkspaceState): ProjectInfo {
     project_name: ws.project?.project_name || ws.hivemind.website_url,
     description: ws.project?.description || "",
     geographics: ws.project?.geographics || [],
+    audiences: ws.project?.audiences || [],
   };
 }
 
@@ -28,13 +29,18 @@ export function ProjectInfoForm({
   showApprove?: boolean;
 }) {
   const [value, setValue] = useState<ProjectInfo>(fallbackProject(workspace));
+  const [geoText, setGeoText] = useState(value.geographics.join(", "));
+  const [audiencesText, setAudiencesText] = useState(value.audiences.join("\n"));
   const [saving, setSaving] = useState(false);
   const [approving, setApproving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
 
   useEffect(() => {
-    setValue(fallbackProject(workspace));
+    const next = fallbackProject(workspace);
+    setValue(next);
+    setGeoText(next.geographics.join(", "));
+    setAudiencesText(next.audiences.join("\n"));
   }, [workspace]);
 
   const save = async () => {
@@ -42,7 +48,12 @@ export function ProjectInfoForm({
     setError(null);
     setSaved(false);
     try {
-      const updated = await api.patchProject(value);
+      const payload: ProjectInfo = {
+        ...value,
+        geographics: geoText.split(",").map((s) => s.trim()).filter(Boolean),
+        audiences: audiencesText.split("\n").map((s) => s.trim()).filter(Boolean),
+      };
+      const updated = await api.patchProject(payload);
       onChange(updated);
       setSaved(true);
     } catch (e) {
@@ -94,20 +105,55 @@ export function ProjectInfoForm({
       <label className="block space-y-2">
         <span className="text-sm font-medium">Geographics</span>
         <Input
-          value={value.geographics.join(", ")}
-          onChange={(e) => setValue((curr) => ({
-            ...curr,
-            geographics: e.target.value.split(",").map((item) => item.trim()).filter(Boolean),
-          }))}
+          value={geoText}
+          onChange={(e) => setGeoText(e.target.value)}
           placeholder="Canada, United States"
         />
+      </label>
+
+      <label className="block space-y-2">
+        <span className="text-sm font-medium">Audiences</span>
+        <Textarea
+          className="min-h-[80px]"
+          value={audiencesText}
+          onChange={(e) => setAudiencesText(e.target.value)}
+          placeholder="One audience per line — e.g. Canadian SMB owners"
+        />
+        {(() => {
+          const overlong = audiencesText
+            .split("\n")
+            .map((s) => s.trim())
+            .filter(Boolean)
+            .filter((s) => s.length > 25);
+          if (overlong.length === 0) {
+            return (
+              <p className="text-xs text-[var(--color-ink-muted)]">
+                One per line. Max 25 characters each.
+              </p>
+            );
+          }
+          return (
+            <p className="text-xs text-[var(--color-negative)]">
+              Too long (25 char max): {overlong.map((s) => `"${s}"`).join(", ")}
+            </p>
+          );
+        })()}
       </label>
 
       {error && <p className="text-sm text-[var(--color-negative)]">{error}</p>}
       {saved && <p className="text-sm text-[var(--color-positive)]">Project info saved.</p>}
 
       <div className="flex flex-wrap justify-end gap-3">
-        <Button type="button" variant="secondary" onClick={save} disabled={saving || !value.project_name.trim()}>
+        <Button
+          type="button"
+          variant="secondary"
+          onClick={save}
+          disabled={
+            saving ||
+            !value.project_name.trim() ||
+            audiencesText.split("\n").some((s) => s.trim().length > 25)
+          }
+        >
           <Save className="w-4 h-4" />
           {saving ? "Saving..." : "Save"}
         </Button>

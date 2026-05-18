@@ -3,7 +3,7 @@
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
@@ -19,6 +19,8 @@ type FormValues = z.infer<typeof schema>;
 
 export function OnboardForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const demoMode = searchParams.get("demo") === "1";
   const [submitting, setSubmitting] = useState(false);
   const [loadingExisting, setLoadingExisting] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -29,6 +31,10 @@ export function OnboardForm() {
   });
 
   useEffect(() => {
+    if (demoMode) {
+      setLoadingExisting(false);
+      return;
+    }
     let active = true;
     api.getWorkspace()
       .then((existing) => {
@@ -41,12 +47,20 @@ export function OnboardForm() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [demoMode]);
 
   const onSubmit = async (values: FormValues) => {
     setSubmitting(true);
     setError(null);
     try {
+      if (demoMode) {
+        await new Promise((r) => setTimeout(r, 1200));
+        const existing = await api.getWorkspace();
+        if (existing) {
+          setWorkspace(existing);
+          return;
+        }
+      }
       setWorkspace(await api.createWorkspace({ website_url: values.website_url }));
     } catch (e) {
       setError(e instanceof Error ? e.message : "Submit failed");

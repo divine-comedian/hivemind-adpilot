@@ -17,7 +17,7 @@ export interface WorkspaceState {
     focus_notes: string;
   };
   platforms: {
-    linkedin?: { account_id: string; org_urn: string };
+    linkedin?: { account_id: string; organization_id: string };
     facebook?: { account_id: string; page_id: string };
   };
   created_at: string;
@@ -29,6 +29,7 @@ export interface ProjectInfo {
   project_name: string;
   description: string;
   geographics: string[];
+  audiences: string[];
 }
 
 export interface Draft {
@@ -74,7 +75,7 @@ export interface DraftIdeasResponse {
 export interface LinkedInCredentials {
   access_token: string;
   account_id: string;
-  org_urn: string;
+  organization_id: string;
 }
 
 export interface FacebookCredentials {
@@ -131,6 +132,7 @@ export const api = {
   updateDraft: (id: string, body: { headline: string; body: string; cta: string }) =>
     j<Draft>(`/drafts/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   regenerateDraft: (id: string) => j<Draft>(`/drafts/${id}/regenerate`, { method: "POST" }),
+  regenerateDraftImage: (id: string) => j<Draft>(`/drafts/${id}/regenerate-image`, { method: "POST" }),
   refineDraft: (id: string, guidance: string) =>
     j<Draft>(`/drafts/${id}/refine`, { method: "POST", body: JSON.stringify({ guidance }) }),
   deleteDraft: (id: string) => j<{ ok: boolean }>(`/drafts/${id}`, { method: "DELETE" }),
@@ -141,6 +143,14 @@ export const api = {
     j<DraftIdeasResponse>("/draft-ideas/dismiss", { method: "POST", body: JSON.stringify({ angle_id }) }),
   getAnalytics: (window: string = "30d") => j(`/analytics?window=${window}`),
   acceptDiagnose: (body: unknown) => j("/diagnose/accept", { method: "POST", body: JSON.stringify(body) }),
+  getLatestDiagnosis: () => j<{
+    diagnose_id: string;
+    created_at: string;
+    summary: string;
+    kill_recommendations: { target_id: string; platform: string; reasoning: string; framework_cited: string | null }[];
+    replacement_drafts: { draft_id: string; headline: string; body: string; rationale: string }[];
+    tier: "A" | "B";
+  } | null>("/diagnose/latest"),
 };
 
 export function subscribeWorkspaceEvents(onEvent: (e: { type: string; [k: string]: unknown }) => void) {

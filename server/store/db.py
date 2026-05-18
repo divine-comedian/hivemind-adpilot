@@ -135,6 +135,13 @@ class DraftsDB:
                 (headline, body, cta, draft_id),
             )
 
+    def update_draft_image(self, draft_id: str, image_path: str) -> None:
+        with self._lock, self._conn() as c:
+            c.execute(
+                "UPDATE drafts SET image_path=? WHERE id=?",
+                (image_path, draft_id),
+            )
+
     def mark_pushed(self, draft_id: str, external_urn: str, external_url: str) -> None:
         with self._lock, self._conn() as c:
             c.execute("UPDATE drafts SET status='pushed' WHERE id=?", (draft_id,))
@@ -153,6 +160,21 @@ class DraftsDB:
             c.execute("UPDATE drafts SET status='discarded' WHERE id=?", (draft_id,))
 
     # ---- diagnoses ----
+
+    def get_latest_diagnosis(self, workspace_id: str) -> dict[str, Any] | None:
+        with self._conn() as c:
+            row = c.execute(
+                "SELECT * FROM diagnoses WHERE workspace_id = ? ORDER BY created_at DESC LIMIT 1",
+                (workspace_id,),
+            ).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        d["performance_snapshot"] = json.loads(d["performance_snapshot"] or "[]")
+        d["strategist_trace"] = json.loads(d["strategist_trace"] or "{}")
+        d["killed_ad_ids"] = json.loads(d["killed_ad_ids"] or "[]")
+        d["accepted_replacement_ids"] = json.loads(d["accepted_replacement_ids"] or "[]")
+        return d
 
     def insert_diagnosis(self, d: dict[str, Any]) -> None:
         with self._lock, self._conn() as c:

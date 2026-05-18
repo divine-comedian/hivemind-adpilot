@@ -162,7 +162,13 @@ def _build_structured_prompt(style: dict, headline: str, ad_format: str) -> str:
 def _build_legacy_prompt(style: dict, headline: str, logo_type: str, ad_format: str) -> str:
     """Build a freeform prompt for legacy styles (old format with 'prompt' field)."""
     fmt = AD_FORMATS[ad_format]
-    api_w, api_h = fmt["api_size"].split("x")
+    # images.edit() doesn't accept "auto" — fall back to landscape 1536x1024
+    # (matches the size coercion in generate_image())
+    api_size = fmt["api_size"]
+    if api_size == "auto":
+        api_w, api_h = "1536", "1024"
+    else:
+        api_w, api_h = api_size.split("x")
     crop_w, crop_h = fmt["crop"]
 
     if ad_format == "story":

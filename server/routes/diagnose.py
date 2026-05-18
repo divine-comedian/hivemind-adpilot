@@ -2,12 +2,15 @@
 
 import asyncio
 import json
+import logging
 import os
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
+
+log = logging.getLogger(__name__)
 
 from server.deps import hivemind, workspace_store, drafts_db, WORKSPACE_DIR
 from server.demo import demo_diagnosis_result, demo_mode
@@ -74,6 +77,7 @@ async def diagnose_stream(request: Request):
                     )
                     img = str(image_path)
                 except (Exception, SystemExit):
+                    log.exception("image generation failed for draft %s", draft_id)
                     img = ""
                 drafts_db().insert_draft({
                     "id": draft_id,
@@ -131,6 +135,25 @@ async def diagnose_stream(request: Request):
             yield {"event": ev["event"], "data": json.dumps(ev["data"], default=str)}
 
     return EventSourceResponse(event_gen())
+
+
+@router.get("/diagnose/latest")
+def get_latest_diagnosis():
+    state = workspace_store().load()
+    if not state:
+        return None
+    row = drafts_db().get_latest_diagnosis(state["workspace_id"])
+    if not row:
+        return None
+    trace = row["strategist_trace"] or {}
+    return {
+        "diagnose_id": row["id"],
+        "created_at": row["created_at"],
+        "summary": row["summary"] or trace.get("summary", ""),
+        "kill_recommendations": trace.get("kill_recommendations", []),
+        "replacement_drafts": trace.get("replacement_drafts", []),
+        "tier": trace.get("tier", "A"),
+    }
 
 
 class AcceptIn(BaseModel):

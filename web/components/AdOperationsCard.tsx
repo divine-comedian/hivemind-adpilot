@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ExternalLink, Pencil, Save, Send, Trash2, X } from "lucide-react";
+import { BarChart3, ExternalLink, ImageIcon, Pencil, Save, Send, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
@@ -51,7 +51,8 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
   const [cta, setCta] = useState(normalizeCta(draft.cta));
   const [error, setError] = useState<string | null>(null);
   const isPublished = draft.status === "pushed" || !!draft.published_at;
-  const canPublish = !isPublished && draft.status === "draft";
+  const hasImage = Boolean(draft.image_path);
+  const canPublish = !isPublished && draft.status === "draft" && hasImage;
 
   const resetEdit = () => {
     setHeadline(draft.headline);
@@ -114,6 +115,19 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
     }
   };
 
+  const generateImage = async () => {
+    setBusy("image");
+    setError(null);
+    try {
+      await api.regenerateDraftImage(draft.id);
+      onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Image generation failed");
+    } finally {
+      setBusy(null);
+    }
+  };
+
   const remove = async () => {
     if (!window.confirm("Delete this ad from the workspace?")) return;
     setBusy("delete");
@@ -130,11 +144,24 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
 
   return (
     <Card className="flex flex-col gap-5">
-      {draft.image_path && (
+      {hasImage ? (
         <div className="aspect-[5/4] bg-[var(--color-paper)] overflow-hidden">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src={`/api/image?p=${encodeURIComponent(draft.image_path)}`} alt="" className="w-full h-full object-cover" />
         </div>
+      ) : (
+        !isPublished && (
+          <div className="aspect-[5/4] bg-[var(--color-paper)] border border-dashed border-[var(--color-hairline)] flex flex-col items-center justify-center gap-3 p-6 text-center">
+            <ImageIcon className="w-8 h-8 text-[var(--color-ink-muted)]" />
+            <p className="text-sm text-[var(--color-ink-muted)] max-w-[28ch]">
+              No image yet. Generate one to preview the final ad mockup before publishing.
+            </p>
+            <Button size="sm" onClick={generateImage} disabled={busy !== null}>
+              <ImageIcon className="w-4 h-4" />
+              {busy === "image" ? "Generating…" : "Generate image"}
+            </Button>
+          </div>
+        )
       )}
 
       <div className="flex items-center justify-between gap-3">
@@ -251,7 +278,15 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
       )}
 
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2 mt-auto">
-        {canPublish ? (
+        {isPublished ? (
+          <Button size="sm" variant="secondary" disabled>
+            Published
+          </Button>
+        ) : !hasImage ? (
+          <Button size="sm" variant="secondary" disabled>
+            Generate image first
+          </Button>
+        ) : (
           <Button size="sm" onClick={publish} disabled={busy !== null || editing}>
             <Send className="w-4 h-4" />
             {busy === "publish"
@@ -259,10 +294,6 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
               : credentialsConnected[draft.platform]
                 ? "Publish"
                 : "Connect"}
-          </Button>
-        ) : (
-          <Button size="sm" variant="secondary" disabled>
-            Published
           </Button>
         )}
 
