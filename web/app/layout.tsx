@@ -1,23 +1,22 @@
 import type { Metadata } from "next";
-import { Fraunces, Geist, JetBrains_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 
-const fraunces = Fraunces({
+const display = localFont({
+  src: "../../fonts/EB_Garamond/EBGaramond-VariableFont_wght.ttf",
   variable: "--font-display",
-  subsets: ["latin"],
   display: "swap",
-  axes: ["opsz", "SOFT"],
 });
 
-const geist = Geist({
+const body = localFont({
+  src: "../../fonts/Geist/Geist-VariableFont_wght.ttf",
   variable: "--font-body",
-  subsets: ["latin"],
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const mono = localFont({
+  src: "../../fonts/Raleway/Raleway-VariableFont_wght.ttf",
   variable: "--font-mono",
-  subsets: ["latin"],
   display: "swap",
 });
 
@@ -29,7 +28,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body className={`${fraunces.variable} ${geist.variable} ${jetbrainsMono.variable} antialiased`}>
+      <body className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
         {children}
       </body>
     </html>

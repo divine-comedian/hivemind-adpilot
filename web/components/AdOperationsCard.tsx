@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { BarChart3, ExternalLink, Pencil, Send, Trash2 } from "lucide-react";
+import { BarChart3, ExternalLink, Pencil, Save, Send, Trash2, X } from "lucide-react";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Draft, api } from "@/lib/api";
 
@@ -14,6 +15,20 @@ interface Props {
   credentialsConnected: { linkedin: boolean; facebook: boolean };
   onRequestCredentials: (platform: "linkedin" | "facebook") => void;
   onChange: () => void;
+}
+
+const CTA_OPTIONS = [
+  "LEARN_MORE",
+  "SIGN_UP",
+  "REGISTER",
+  "DOWNLOAD",
+  "APPLY",
+  "SUBSCRIBE",
+  "GET_QUOTE",
+] as const;
+
+function normalizeCta(value: string) {
+  return CTA_OPTIONS.includes(value as (typeof CTA_OPTIONS)[number]) ? value : "LEARN_MORE";
 }
 
 function formatDate(value?: string | null) {
@@ -29,10 +44,41 @@ function analyticsTarget(draft: Draft) {
 export function AdOperationsCard({ draft, credentialsConnected, onRequestCredentials, onChange }: Props) {
   const [busy, setBusy] = useState<string | null>(null);
   const [refineOpen, setRefineOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [guidance, setGuidance] = useState("");
+  const [headline, setHeadline] = useState(draft.headline);
+  const [body, setBody] = useState(draft.body);
+  const [cta, setCta] = useState(normalizeCta(draft.cta));
   const [error, setError] = useState<string | null>(null);
   const isPublished = draft.status === "pushed" || !!draft.published_at;
   const canPublish = !isPublished && draft.status === "draft";
+
+  const resetEdit = () => {
+    setHeadline(draft.headline);
+    setBody(draft.body);
+    setCta(normalizeCta(draft.cta));
+    setEditing(false);
+  };
+
+  const saveEdit = async () => {
+    const nextHeadline = headline.trim();
+    const nextBody = body.trim();
+    if (!nextHeadline || !nextBody) {
+      setError("Ad title and subheader are required");
+      return;
+    }
+    setBusy("edit");
+    setError(null);
+    try {
+      await api.updateDraft(draft.id, { headline: nextHeadline, body: nextBody, cta });
+      setEditing(false);
+      onChange();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not save ad copy");
+    } finally {
+      setBusy(null);
+    }
+  };
 
   const publish = async () => {
     if (!credentialsConnected[draft.platform]) {
@@ -96,27 +142,83 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
           <Badge>{draft.platform}</Badge>
           {isPublished ? <Badge tone="positive">published</Badge> : <Badge>draft</Badge>}
         </div>
-        {draft.external_url && (
-          <a href={draft.external_url} target="_blank" rel="noreferrer" className="text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
-            <ExternalLink className="w-4 h-4" />
-          </a>
-        )}
+        <div className="flex items-center gap-2">
+          {!isPublished && !editing && (
+            <button
+              onClick={() => {
+                setRefineOpen(false);
+                setEditing(true);
+              }}
+              aria-label="Edit ad copy"
+              className="text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]"
+            >
+              <Pencil className="w-4 h-4" />
+            </button>
+          )}
+          {draft.external_url && (
+            <a href={draft.external_url} target="_blank" rel="noreferrer" className="text-[var(--color-ink-muted)] hover:text-[var(--color-accent)]">
+              <ExternalLink className="w-4 h-4" />
+            </a>
+          )}
+        </div>
       </div>
 
-      <div className="space-y-4 text-sm">
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2">Ad title</p>
-          <h3 className="font-display text-xl leading-tight">{draft.headline}</h3>
+      {editing ? (
+        <div className="space-y-4 text-sm">
+          <div>
+            <label className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2 block">Ad title</label>
+            <Input value={headline} onChange={(e) => setHeadline(e.target.value)} maxLength={70} disabled={busy !== null} />
+          </div>
+          <div>
+            <label className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2 block">Ad subheader</label>
+            <Textarea
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              maxLength={150}
+              disabled={busy !== null}
+              className="min-h-[96px]"
+            />
+          </div>
+          <div>
+            <label className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2 block">CTA button text</label>
+            <select
+              value={cta}
+              onChange={(e) => setCta(e.target.value)}
+              disabled={busy !== null}
+              className="h-10 w-full border border-[var(--color-hairline)] bg-[var(--color-surface)] px-3 text-[15px] text-[var(--color-ink)] rounded-sm"
+            >
+              {CTA_OPTIONS.map((option) => (
+                <option key={option} value={option}>{option}</option>
+              ))}
+            </select>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button size="sm" variant="secondary" onClick={resetEdit} disabled={busy !== null}>
+              <X className="w-4 h-4" />
+              Cancel
+            </Button>
+            <Button size="sm" onClick={saveEdit} disabled={busy !== null}>
+              <Save className="w-4 h-4" />
+              {busy === "edit" ? "Saving..." : "Save"}
+            </Button>
+          </div>
         </div>
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2">Ad subheader</p>
-          <p className="text-[var(--color-ink-muted)]">{draft.body}</p>
+      ) : (
+        <div className="space-y-4 text-sm">
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2">Ad title</p>
+            <h3 className="font-display text-xl leading-tight">{draft.headline}</h3>
+          </div>
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2">Ad subheader</p>
+            <p className="text-[var(--color-ink-muted)]">{draft.body}</p>
+          </div>
+          <div>
+            <p className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2">CTA button text</p>
+            <p className="font-medium">{draft.cta}</p>
+          </div>
         </div>
-        <div>
-          <p className="font-mono text-[11px] uppercase tracking-widest text-[var(--color-ink-muted)] mb-2">CTA button text</p>
-          <p className="font-medium">{draft.cta}</p>
-        </div>
-      </div>
+      )}
 
       <dl className="grid grid-cols-2 gap-3 border-t border-[var(--color-hairline)] pt-4 text-xs">
         <div>
@@ -131,7 +233,7 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
 
       {error && <p className="text-sm text-[var(--color-negative)]">{error}</p>}
 
-      {refineOpen && !isPublished && (
+      {refineOpen && !isPublished && !editing && (
         <div className="space-y-3">
           <Textarea
             value={guidance}
@@ -150,7 +252,7 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
 
       <div className="grid grid-cols-[1fr_1fr_auto] gap-2 mt-auto">
         {canPublish ? (
-          <Button size="sm" onClick={publish} disabled={busy !== null}>
+          <Button size="sm" onClick={publish} disabled={busy !== null || editing}>
             <Send className="w-4 h-4" />
             {busy === "publish"
               ? "Publishing..."
@@ -172,13 +274,21 @@ export function AdOperationsCard({ draft, credentialsConnected, onRequestCredent
             </Button>
           </Link>
         ) : (
-          <Button size="sm" variant="secondary" onClick={() => setRefineOpen((open) => !open)} disabled={busy !== null}>
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => {
+              setEditing(false);
+              setRefineOpen((open) => !open);
+            }}
+            disabled={busy !== null || editing}
+          >
             <Pencil className="w-4 h-4" />
             Refine
           </Button>
         )}
 
-        <Button size="sm" variant="ghost" onClick={remove} disabled={busy !== null}>
+        <Button size="sm" variant="ghost" onClick={remove} disabled={busy !== null || editing}>
           <Trash2 className="w-4 h-4" />
         </Button>
       </div>

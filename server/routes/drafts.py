@@ -7,6 +7,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
 from server.deps import hivemind, workspace_store, drafts_db, WORKSPACE_DIR
+from server.demo import demo_mode, ensure_demo_data
 from server.hivemind.strategist_chain import StrategistChain
 
 
@@ -43,6 +44,7 @@ def _business_from_state(state: dict) -> dict:
 
 @router.get("/drafts")
 def list_drafts():
+    ensure_demo_data(workspace_store(), drafts_db())
     state = workspace_store().load()
     if not state:
         return []
@@ -77,6 +79,12 @@ def push_draft(draft_id: str, body: PushIn):
     d = drafts_db().get_draft(draft_id)
     if not d:
         raise HTTPException(404)
+    if demo_mode():
+        urn = f"fb:{draft_id}" if body.platform == "facebook" else f"urn:li:sponsoredCreative:{draft_id}"
+        url = f"https://demo.adpilot.local/{body.platform}/{draft_id}"
+        drafts_db().mark_pushed(draft_id, external_urn=urn, external_url=url)
+        return {"external_urn": urn, "external_url": url}
+
     state = workspace_store().load()
     platforms_state = state.get("platforms", {})
     click_url = state["hivemind"]["website_url"]
@@ -101,6 +109,7 @@ def push_draft(draft_id: str, body: PushIn):
             cta=d["cta"],
             destination_url=click_url,
             status="PAUSED",
+            org_urn=li["org_urn"],
         )
         urn = result["creative_id"]
         url = f"https://www.linkedin.com/campaignmanager/accounts/{li['account_id']}/creatives/"

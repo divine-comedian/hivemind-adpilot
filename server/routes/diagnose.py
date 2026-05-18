@@ -2,6 +2,7 @@
 
 import asyncio
 import json
+import os
 import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException, Request
@@ -9,6 +10,7 @@ from pydantic import BaseModel
 from sse_starlette.sse import EventSourceResponse
 
 from server.deps import hivemind, workspace_store, drafts_db, WORKSPACE_DIR
+from server.demo import demo_diagnosis_result, demo_mode
 from server.hivemind.diagnose_chain import DiagnoseChain
 from server.routes.analytics import get_analytics
 
@@ -34,18 +36,27 @@ async def diagnose_stream(request: Request):
     async def run_chain():
         loop = asyncio.get_running_loop()
         try:
-            result = await loop.run_in_executor(
-                None,
-                lambda: chain.diagnose(
-                    project_id=state["hivemind"]["project_id"],
-                    tier=tier,
-                    performance_data=rows,
-                    active_creative_copy=[],
-                    platforms=["linkedin", "facebook"],
-                    voice_notes=voice_notes,
-                    on_step=on_step,
-                ),
-            )
+            if demo_mode() and os.environ.get("ADPILOT_DEMO_MOCK_DIAGNOSE", "true").lower() in {"1", "true", "yes", "on"}:
+                on_step("strategist", "running", {"tier": tier})
+                await asyncio.sleep(0.35)
+                on_step("strategist", "complete", {"recommendations": 1})
+                on_step("ghostwriter", "running", {"count": 2})
+                await asyncio.sleep(0.35)
+                on_step("ghostwriter", "complete", {"count": 2})
+                result = demo_diagnosis_result()
+            else:
+                result = await loop.run_in_executor(
+                    None,
+                    lambda: chain.diagnose(
+                        project_id=state["hivemind"]["project_id"],
+                        tier=tier,
+                        performance_data=rows,
+                        active_creative_copy=[],
+                        platforms=["linkedin", "facebook"],
+                        voice_notes=voice_notes,
+                        on_step=on_step,
+                    ),
+                )
 
             # Persist replacement drafts immediately so accept-all is one click
             from scripts import generate_image as gi
@@ -138,6 +149,8 @@ def accept(body: AcceptIn):
     if body.action == "kill":
         if not body.platform:
             raise HTTPException(400, "platform required for kill action")
+        if demo_mode():
+            return {"status": "paused", "target": body.target_id, "platform": body.platform, "demo": True}
         if body.platform == "linkedin":
             li = state.get("platforms", {}).get("linkedin")
             if not li:

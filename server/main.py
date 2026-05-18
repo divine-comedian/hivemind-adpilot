@@ -5,6 +5,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI
+from fastapi import Request
+from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 
@@ -38,9 +40,23 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AdPilot Sidecar", version="0.1.0", lifespan=lifespan)
 
+
+@app.middleware("http")
+async def require_backend_secret(request: Request, call_next):
+    secret = os.environ.get("ADPILOT_BACKEND_SECRET")
+    if secret and request.url.path != "/health":
+        supplied = request.headers.get("x-adpilot-backend-secret")
+        if supplied != secret:
+            return JSONResponse({"detail": "unauthorized"}, status_code=401)
+    return await call_next(request)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000"],
+    allow_origins=[
+        origin.strip()
+        for origin in os.environ.get("ADPILOT_CORS_ORIGINS", "http://localhost:3000").split(",")
+        if origin.strip()
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

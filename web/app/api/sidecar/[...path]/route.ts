@@ -1,6 +1,7 @@
 import { NextRequest } from "next/server";
 
 const SIDECAR_BASE = process.env.ADPILOT_API_BASE ?? "http://127.0.0.1:8000";
+const BACKEND_SECRET = process.env.ADPILOT_BACKEND_SECRET;
 
 type Params = {
   params: Promise<{ path?: string[] }>;
@@ -14,6 +15,9 @@ async function proxy(request: NextRequest, { params }: Params) {
   const headers = new Headers(request.headers);
   headers.delete("host");
   headers.delete("connection");
+  if (BACKEND_SECRET) {
+    headers.set("x-adpilot-backend-secret", BACKEND_SECRET);
+  }
 
   let response: Response;
   try {

@@ -92,6 +92,9 @@ export function CredentialsPanel({ platform, onClose, onSaved }: Props) {
           {platform === "linkedin" ? (
             <div className="space-y-1.5">
               <label className="text-sm font-medium">Organization URN</label>
+              <p className="text-xs text-[var(--color-ink-muted)]">
+                Identifies the LinkedIn Company Page that owns uploaded ad images and sponsored posts.
+              </p>
               <Input
                 value={orgUrn}
                 onChange={(e) => setOrgUrn(e.target.value)}

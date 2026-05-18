@@ -13,7 +13,8 @@ import uuid
 from datetime import datetime, timezone
 from fastapi import APIRouter, HTTPException
 
-from server.deps import hivemind, workspace_store, poller
+from server.deps import hivemind, workspace_store, poller, drafts_db
+from server.demo import ensure_demo_data
 from server.models import CredentialsIn, OnboardIn, ProjectInfoPatch, VoicePatch
 from server.platforms import linkedin as li
 from server.platforms import facebook as fb
@@ -79,6 +80,7 @@ async def create_workspace(payload: OnboardIn):
 
 @router.get("/workspace/me")
 def get_workspace():
+    ensure_demo_data(workspace_store(), drafts_db())
     return workspace_store().load()
 
 

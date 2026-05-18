@@ -4,6 +4,7 @@ from datetime import date, timedelta
 from fastapi import APIRouter
 
 from server.deps import workspace_store
+from server.demo import analytics_summary, demo_analytics_rows, demo_mode
 from server.normalize.metrics import normalize_li_row, normalize_fb_row
 from scripts import li_analytics, fb_insights
 
@@ -14,6 +15,10 @@ router = APIRouter()
 @router.get("/analytics")
 def get_analytics(window: str = "30d"):
     days = int(window.rstrip("d"))
+    if demo_mode():
+        rows = demo_analytics_rows()
+        return {"rows": rows, "summary": analytics_summary(rows)}
+
     state = workspace_store().load()
     if not state:
         return {"rows": [], "summary": {}}

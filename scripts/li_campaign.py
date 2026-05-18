@@ -117,7 +117,7 @@ def update_campaign(
 
 # --- Image upload ---
 
-def upload_image(account_id: str, image_path: str) -> dict:
+def upload_image(account_id: str, image_path: str, org_urn: str = _ORG_URN) -> dict:
     """Upload image to LinkedIn CDN. Owner is the organization (required for ad posts).
 
     Returns dict with image_urn.
@@ -126,7 +126,7 @@ def upload_image(account_id: str, image_path: str) -> dict:
     url = f"{LINKEDIN_BASE_URL}/images?action=initializeUpload"
     body = {
         "initializeUploadRequest": {
-            "owner": _ORG_URN,
+            "owner": org_urn,
         }
     }
     resp = requests.post(url, headers={**_headers(), "Content-Type": "application/json"}, json=body)
@@ -163,6 +163,7 @@ def create_ad(
     cta: str,
     destination_url: str,
     status: str = "ACTIVE",
+    org_urn: str = _ORG_URN,
 ) -> dict:
     """Create a LinkedIn image ad in one call (upload → post → creative).
 
@@ -173,7 +174,7 @@ def create_ad(
     """
     # Step 1: Upload image
     print("Uploading image...", file=sys.stderr)
-    img_result = upload_image(account_id, image_path)
+    img_result = upload_image(account_id, image_path, org_urn=org_urn)
     image_urn = img_result["image_urn"]
     print(f"Image uploaded: {image_urn}", file=sys.stderr)
 
@@ -185,7 +186,7 @@ def create_ad(
             "dscAdAccount": f"urn:li:sponsoredAccount:{account_id}",
             "dscStatus": "ACTIVE",
         },
-        "author": _ORG_URN,
+        "author": org_urn,
         "commentary": intro_text,
         "visibility": "PUBLIC",
         "distribution": {

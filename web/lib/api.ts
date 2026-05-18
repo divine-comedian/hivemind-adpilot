@@ -128,6 +128,8 @@ export const api = {
     method: "POST",
     body: JSON.stringify(body),
   }),
+  updateDraft: (id: string, body: { headline: string; body: string; cta: string }) =>
+    j<Draft>(`/drafts/${id}`, { method: "PATCH", body: JSON.stringify(body) }),
   regenerateDraft: (id: string) => j<Draft>(`/drafts/${id}/regenerate`, { method: "POST" }),
   refineDraft: (id: string, guidance: string) =>
     j<Draft>(`/drafts/${id}/refine`, { method: "POST", body: JSON.stringify({ guidance }) }),

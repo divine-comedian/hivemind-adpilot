@@ -100,7 +100,8 @@ def ghostwriter_text(*, angle: dict, voice_notes: str, platform: str) -> str:
         '  "rationale": "one sentence on why this copy serves the angle"\n'
         '}\n\n'
         "Voice: match voice_notes exactly. If voice_notes is empty, default to confident-but-grounded.\n"
-        "linkedin_feed: professional, no exclamation points, no emoji. fb_feed: same, with slightly more curiosity-driven hooks.\n\n"
+        "linkedin_feed: professional, no exclamation points, no emoji. fb_feed: same, with slightly more curiosity-driven hooks.\n"
+        "CTA guidance: prefer LEARN_MORE or SIGN_UP for fixed-price offers. Use GET_QUOTE only for custom-priced services.\n\n"
         f"Payload:\n{json.dumps(payload, default=str)}"
     )
 
@@ -223,6 +224,7 @@ def ad_set_copy_text(
         '  ]\n'
         '}\n\n'
         "linkedin: professional, specific, no emoji. facebook: clear hook with curiosity, no hype. "
+        "Prefer LEARN_MORE or SIGN_UP for fixed-price offers; use GET_QUOTE only for custom-priced services. "
         "The output must contain no platforms outside the requested list.\n\n"
         f"Payload:\n{json.dumps(payload, default=str)}"
     )
@@ -256,7 +258,8 @@ def refine_ad_copy_text(
         '  "image_prompt": "short prompt for an image generator; never describe text or logos",\n'
         '  "rationale": "one sentence on why the refined copy is stronger"\n'
         '}\n\n'
-        "Rules: keep the CTA as a platform-supported CTA. Do not add emoji. Do not return markdown. "
+        "Rules: keep the CTA as a platform-supported CTA. Prefer LEARN_MORE or SIGN_UP for fixed-price offers; "
+        "use GET_QUOTE only for custom-priced services. Do not add emoji. Do not return markdown. "
         "If the user's guidance conflicts with the project, adapt it while keeping the ad credible.\n\n"
         f"Payload:\n{json.dumps(payload, default=str)}"
     )
